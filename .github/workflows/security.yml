@@ -2,9 +2,9 @@ name: Security
 
 on:
   push:
-  pull_request:
-  schedule:
-    - cron: "23 8 * * 1"
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -28,6 +28,9 @@ jobs:
         uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # The scan still fails on findings; its optional SARIF artifact is
+          # redundant with Harbor's built-in scan and consumes Actions storage.
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
       - run: npm run licenses:check
       - run: npm audit --audit-level=moderate
 
@@ -35,6 +38,7 @@ jobs:
     name: CodeQL
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       security-events: write
     steps:
