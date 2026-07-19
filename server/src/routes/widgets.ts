@@ -107,6 +107,10 @@ function publicError(user: User, error: any, fallback: string): string {
 // handful of new readings — the graph "fills in" without re-reading the year.
 const HEAT_BUCKET_SEC = 1800;
 const HEAT_CHUNK_SEC = 14 * 86_400;
+// Keep each SQM JSON response comfortably below the global 4 MiB outbound
+// ceiling. A full chunk may contain more rows, so capped pages continue from
+// the latest returned timestamp instead of skipping the rest of the chunk.
+const HEAT_PAGE_LIMIT = 10_000;
 interface HeatState {
   lastTs: number;
   touchedAt: number;
@@ -585,7 +589,9 @@ export function widgetRoutes(app: FastifyInstance): void {
                 ).catch(() => []);
                 heatEarliest.set(row.id, first.length ? first[0].ts : 0);
               }
-              // pull everything newer than we've seen, chunked to stay under the API row cap
+              // Pull everything newer than we've seen. Time chunks bound each
+              // query, while row pages bound the response body without losing
+              // readings when a dense chunk reaches the API limit.
               let from = Math.max(st.lastTs, yearStart);
               const refreshUntil = until - st.lastTs < 60 ? st.lastTs : until;
               while (from < refreshUntil) {
@@ -594,7 +600,7 @@ export function widgetRoutes(app: FastifyInstance): void {
                   rowToConfig(row),
                   from,
                   to,
-                  50_000
+                  HEAT_PAGE_LIMIT
                 );
                 for (const rd of readings) {
                   if (rd.ts <= st.lastTs || rd.ts < yearStart || rd.ts > yearEnd) continue;
@@ -604,10 +610,26 @@ export function widgetRoutes(app: FastifyInstance): void {
                   cell.count += 1;
                   st.buckets.set(b, cell);
                 }
-                // Advance through successfully queried empty/sparse windows so
-                // an empty year is not backfilled again on every poll.
-                st.lastTs = to;
-                from = to;
+                // A full page may have been truncated by the upstream API.
+                // Continue within this time chunk from its last row; otherwise
+                // advance through the successfully queried empty/sparse range.
+                const lastReturned = readings.reduce(
+                  (latest, reading) => Math.max(latest, reading.ts),
+                  -Infinity
+                );
+                const pageWasCapped = readings.length >= HEAT_PAGE_LIMIT;
+                if (pageWasCapped && Number.isFinite(lastReturned) && lastReturned > from) {
+                  st.lastTs = Math.min(lastReturned, to);
+                  from = st.lastTs;
+                } else if (pageWasCapped) {
+                  // Prevent a malformed/non-advancing upstream page from
+                  // trapping the request in an infinite loop.
+                  st.lastTs = Math.min(Math.floor(from) + 1, to);
+                  from = st.lastTs;
+                } else {
+                  st.lastTs = to;
+                  from = to;
+                }
               }
             } catch (err: any) {
               errors.push({

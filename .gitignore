@@ -23,4 +23,6 @@ secrets/
 *.sqlite3
 /data/
 examples/**/data/
+# Private maintainer helper: intentionally local, never published with Harbor.
+scripts/release-local.sh
 .DS_Store

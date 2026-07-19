@@ -725,6 +725,51 @@ test("empty SQM years advance a bounded watermark instead of refetching the year
   }
 });
 
+test("dense SQM years continue after a response-sized page", async () => {
+  db.prepare("DELETE FROM integrations WHERE type = 'sqm'").run();
+  db.prepare(
+    "INSERT INTO integrations (type, name, url) VALUES ('sqm', 'Dense SQM', 'https://sqm.example.test')"
+  ).run();
+  const adapter = getAdapter("sqm");
+  const original = adapter.fetchSkyReadings;
+  const historicalCalls = [];
+  let sentFullPage = false;
+  let sentContinuation = false;
+  try {
+    adapter.fetchSkyReadings = async (_cfg, sinceSec, _untilSec, limit) => {
+      if (limit === 1) return [{ ts: sinceSec + 1, mpsas: 20 }];
+      historicalCalls.push({ sinceSec, limit });
+      if (!sentFullPage) {
+        sentFullPage = true;
+        return Array.from({ length: limit }, (_, index) => ({
+          ts: sinceSec + index + 1,
+          mpsas: 10,
+        }));
+      }
+      if (!sentContinuation) {
+        sentContinuation = true;
+        return [{ ts: sinceSec + 1800, mpsas: 21.5 }];
+      }
+      return [];
+    };
+
+    const year = new Date().getUTCFullYear() - 2;
+    const response = await inject("GET", `/api/widgets/sky/heatmap?year=${year}`);
+    assert.equal(response.statusCode, 200, response.body);
+    assert.equal(historicalCalls[0].limit, 10_000);
+    assert.ok(
+      historicalCalls[1].sinceSec < historicalCalls[0].sinceSec + 14 * 86_400,
+      "the next request skipped to the following time chunk"
+    );
+    assert.ok(
+      response.json().buckets.some((bucket) => bucket.v === 21.5),
+      "the continuation page was not included in the heatmap"
+    );
+  } finally {
+    adapter.fetchSkyReadings = original;
+  }
+});
+
 test("client login rate limiting returns Retry-After", async () => {
   let limited;
   for (let i = 0; i < 35; i += 1) {
