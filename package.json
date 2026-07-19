@@ -1,0 +1,51 @@
+{
+  "name": "harbor",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "version": "0.1.0",
+  "description": "The harbor for all of your servers and web apps.",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,magenta \"npm run dev -w server\" \"npm run dev -w web\"",
+    "build": "npm run build -w web && npm run build -w server",
+    "start": "node server/dist/index.js",
+    "account:recovery": "npm run build -w server && node server/dist/cli.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
+    "test:unit": "npm run build -w server && node --test --test-concurrency=1 server/test/*.test.mjs",
+    "test": "npm run test:unit",
+    "test:e2e": "playwright test",
+    "test:container": "node scripts/test-container.mjs",
+    "test:helper": "node scripts/test-sms-relay-container.mjs",
+    "test:clean": "node scripts/test-clean-tree.mjs",
+    "test:all": "npm run test:unit && npm run test:e2e",
+    "licenses:check": "node scripts/check-licenses.mjs",
+    "secrets:scan": "node scripts/scan-secrets.mjs",
+    "ci": "npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run build && npm run licenses:check"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.61.1",
+    "concurrently": "^9.1.2",
+    "eslint": "^10.7.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
+    "prettier": "^3.9.5",
+    "typescript-eslint": "^8.64.0"
+  },
+  "engines": {
+    "node": ">=22.22.2 <25"
+  },
+  "allowScripts": {
+    "better-sqlite3@11.10.0": true,
+    "esbuild@0.28.1": true,
+    "esbuild@0.25.12": true
+  }
+}

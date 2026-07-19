@@ -1,0 +1,77 @@
+# Harbor — example drop-in service file for a Traefik Docker stack.
+#
+# Install:
+#   1. mkdir -p $DOCKERDIR/appdata/harbor/data   (pre-create so it isn't root-owned;
+#      the container runs as uid 1000)
+#   2. Preserve an existing Harbor secret, or for a new install run:
+#        openssl rand -hex 32 > $DOCKERDIR/secrets/harbor_secret
+#   3. Copy this file to $DOCKERDIR/services/harbor.yml.
+#   4. Set HARBOR_IMAGE to a published version tag or immutable digest, plus
+#      HARBOR_HOSTNAME, HARBOR_AUTH_MIDDLEWARE, HARBOR_AUTH_PROXY_TRUSTED, and
+#      HARBOR_ADMIN_USERS in the parent .env.
+#   5. add to docker-compose.yml under the appropriate include section:
+#        - $DOCKERDIR/services/harbor.yml
+#   6. docker compose pull harbor && docker compose up -d harbor
+#
+# The configured Traefik forward-auth middleware authenticates users and forwards
+# an identity header. Harbor trusts it only from the exact configured proxy subnet.
+
+services:
+  harbor:
+    image: ${HARBOR_IMAGE:?Set the published Harbor image tag or digest}
+    pull_policy: always
+    container_name: harbor
+    restart: unless-stopped
+    init: true
+    read_only: true
+    stop_grace_period: 15s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    environment:
+      - NODE_ENV=production
+      - HARBOR_SECRET_FILE=/run/secrets/harbor_secret
+      - HARBOR_PREVIOUS_SECRET_FILE=${HARBOR_PREVIOUS_SECRET_FILE:-}
+      - AUTH_PROXY=true
+      - AUTH_PROXY_PROVIDER=${HARBOR_AUTH_PROXY_PROVIDER:-proxy}
+      - PUBLIC_URL=https://${HARBOR_HOSTNAME:?Set Harbor public hostname}
+      - AUTH_PROXY_HEADERS=X-Forwarded-User,Remote-User,X-Forwarded-Email,X-Auth-Request-Email
+      # Required: set these in the parent stack's environment. Use only the
+      # exact Traefik network CIDR/address and explicit initial admin identities.
+      - AUTH_PROXY_TRUSTED=${HARBOR_AUTH_PROXY_TRUSTED:?Set an exact proxy CIDR}
+      - ADMIN_USERS=${HARBOR_ADMIN_USERS:?Set at least one initial administrator}
+      # Private Docker/LAN integrations work by default. Optional hardened mode
+      # restricts them to exact service names or the narrowest network CIDRs.
+      - HARBOR_OUTBOUND_STRICT_PRIVATE=${HARBOR_OUTBOUND_STRICT_PRIVATE:-false}
+      - HARBOR_OUTBOUND_ALLOW_CIDRS=${HARBOR_OUTBOUND_ALLOW_CIDRS:-}
+      - HARBOR_OUTBOUND_ALLOW_HOSTS=${HARBOR_OUTBOUND_ALLOW_HOSTS:-}
+      - HARBOR_AUDIT_RETENTION_DAYS=${HARBOR_AUDIT_RETENTION_DAYS:-180}
+      - HARBOR_AUDIT_MAX_ROWS=${HARBOR_AUDIT_MAX_ROWS:-20000}
+      - HARBOR_SMTP_CA_FILE=${HARBOR_SMTP_CA_FILE:-}
+    secrets:
+      - harbor_secret
+    volumes:
+      - ${DOCKERDIR:?Set the Docker stack root}/appdata/harbor/data:/data
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.harbor-rtr.entrypoints=https"
+      - "traefik.http.routers.harbor-rtr.rule=Host(`${HARBOR_HOSTNAME:?Set Harbor public hostname}`)"
+      - "traefik.http.routers.harbor-rtr.middlewares=${HARBOR_AUTH_MIDDLEWARE:?Set the forward-auth middleware}"
+      - "traefik.http.routers.harbor-rtr.service=harbor-svc"
+      - "traefik.http.services.harbor-svc.loadbalancer.server.port=9090"
+      # Deliberate backup-first upgrades only; migrations are forward-only.
+      - "com.centurylinklabs.watchtower.enable=false"
+
+secrets:
+  harbor_secret:
+    file: $DOCKERDIR/secrets/harbor_secret
+
+networks:
+  proxy:
+    external: true
+    name: ${HARBOR_PROXY_NETWORK:-proxy}

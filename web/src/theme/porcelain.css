@@ -1,0 +1,101 @@
+/* ── Porcelain ──────────────────────────────────────────────────────
+   An airy ceramics studio: blue-on-white brushwork, mineral glazes,
+   deckled-paper texture and sparing vermilion seal details. */
+
+[data-theme="porcelain"] {
+  --bg-deep: #deddd6;
+  --bg: #ebe9e1;
+  --bg-raised: #f8f6ed;
+  --sidebar-bg: rgba(248, 246, 237, 0.82);
+  --sidebar-blur: blur(12px);
+  --sidebar-shadow: 18px 0 48px -36px rgba(23, 75, 120, 0.4);
+  --line: rgba(23, 52, 77, 0.1);
+  --line-strong: rgba(23, 52, 77, 0.23);
+  --hover: rgba(23, 75, 120, 0.055);
+  --active: rgba(23, 75, 120, 0.09);
+  --active-glow: inset 0 -2px 0 #174b78;
+  --text: #172331;
+  --text-dim: #526273;
+  --text-faint: #85877f;
+  --accent: #174b78;
+  --accent-strong: #0c355b;
+  --accent-contrast: #f8f6ed;
+  --ok: #47775a;
+  --warn: #a87628;
+  --danger: #b33b2e;
+  --info: #35749a;
+  --font-display: "Fraunces Variable", Georgia, serif;
+  --font-body: "Fraunces Variable", Georgia, serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-label: "Big Shoulders Variable", sans-serif;
+  --display-weight: 510;
+  --display-tracking: -0.018em;
+  --radius-sm: 5px 2px 6px 3px;
+  --radius-md: 10px 4px 12px 5px;
+  --radius-lg: 16px 7px 18px 8px;
+  --button-radius: 5px 2px 6px 3px;
+  --pill-radius: 999px;
+  --badge-radius: 4px 2px 5px 2px;
+  --card-bg: rgba(250, 248, 240, 0.88);
+  --card-border: rgba(23, 75, 120, 0.15);
+  --card-border-hover: rgba(23, 75, 120, 0.42);
+  --card-shadow: 0 18px 38px -29px rgba(23, 35, 49, 0.42);
+  --card-shadow-hover: 0 24px 44px -29px rgba(23, 75, 120, 0.32);
+  --card-blur: blur(8px);
+  --card-sheen:
+    radial-gradient(ellipse at 12% 0, rgba(255, 255, 255, 0.8), transparent 40%),
+    linear-gradient(102deg, transparent 72%, rgba(23, 75, 120, 0.025));
+  --card-sheen-opacity: 1;
+  --input-bg: rgba(255, 254, 249, 0.82);
+  --dot-glow: none;
+  --brand-filter: none;
+  --nav-active-inset: auto 8px 5px 8px;
+  --nav-active-width: auto;
+  --nav-active-height: 2px;
+  --nav-active-radius: 100%;
+  --shell-texture:
+    radial-gradient(ellipse at 95% 8%, rgba(23, 75, 120, 0.13), transparent 25rem),
+    radial-gradient(ellipse at 4% 93%, rgba(179, 59, 46, 0.08), transparent 18rem),
+    linear-gradient(135deg, #e4e3dc, #f1efe7 48%, #dfded7);
+  --shell-veil:
+    radial-gradient(circle at 15% 22%, rgba(23, 75, 120, 0.07) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 74% 61%, rgba(23, 35, 49, 0.045) 0 0.7px, transparent 1px);
+  --shell-veil-opacity: 0.62;
+  --shell-grain: repeating-linear-gradient(
+    7deg,
+    rgba(23, 35, 49, 0.018) 0 1px,
+    transparent 1px 7px
+  );
+  --shell-grain-blend: multiply;
+  --shell-grain-opacity: 0.5;
+  --panel-tag-bg: #174b78;
+  --panel-tag-border: transparent;
+  --panel-tag-color: #f8f6ed;
+  --panel-tag-radius: 8px 3px 9px 4px;
+  --panel-tag-tracking: 0.16em;
+  --panel-tag-rotate: -0.5deg;
+  --panel-tag-shadow: 0 3px 9px -5px rgba(23, 75, 120, 0.7);
+  --panel-corner-color: rgba(23, 75, 120, 0.22);
+  --waterline-color: #174b78;
+  --waterline-opacity: 0.38;
+  --waterline-speed: 15s;
+  --progress-stripe-opacity: 0.12;
+}
+
+[data-theme="porcelain"] .brand-mark {
+  color: #b33b2e;
+}
+[data-theme="porcelain"] .brand-name {
+  color: var(--accent);
+  font-style: italic;
+}
+[data-theme="porcelain"] .card h3 {
+  color: var(--accent);
+}
+[data-theme="porcelain"] .state-chip,
+[data-theme="porcelain"] .source-badge {
+  border-style: double;
+}
+[data-theme="porcelain"] .widget-slot:nth-child(3n + 2) .panel-tag {
+  --panel-tag-rotate: 0.7deg;
+}

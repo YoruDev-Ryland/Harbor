@@ -1,0 +1,112 @@
+/* ── Night Orchard ──────────────────────────────────────────────────
+   A walled orchard after dusk: plum-black bark, bruised fruit,
+   moonlit leaves and small engraved plant markers. Quiet and tactile. */
+
+[data-theme="night-orchard"] {
+  --bg-deep: #0d0b0e;
+  --bg: #151116;
+  --bg-raised: #211b22;
+  --sidebar-bg: rgba(16, 13, 17, 0.86);
+  --sidebar-blur: blur(18px);
+  --sidebar-shadow: 20px 0 52px -36px rgba(0, 0, 0, 0.9);
+  --line: rgba(238, 230, 218, 0.085);
+  --line-strong: rgba(184, 198, 106, 0.22);
+  --hover: rgba(184, 198, 106, 0.055);
+  --active: rgba(184, 198, 106, 0.1);
+  --active-glow: inset 0 0 0 1px rgba(184, 198, 106, 0.24);
+  --text: #eee6da;
+  --text-dim: #b6aaab;
+  --text-faint: #776b74;
+  --accent: #b8c66a;
+  --accent-strong: #d5df88;
+  --accent-contrast: #171a0b;
+  --ok: #83b47c;
+  --warn: #d2a85f;
+  --danger: #c8666f;
+  --info: #819daf;
+  --font-display: "Fraunces Variable", Georgia, serif;
+  --font-body: "Fraunces Variable", Georgia, serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-label: "Big Shoulders Variable", sans-serif;
+  --display-weight: 520;
+  --display-tracking: -0.01em;
+  --radius-sm: 8px 3px 8px 3px;
+  --radius-md: 12px 4px 12px 4px;
+  --radius-lg: 18px 5px 18px 5px;
+  --button-radius: 10px 3px 10px 3px;
+  --pill-radius: 999px;
+  --badge-radius: 8px 2px 8px 2px;
+  --swatch-radius: 50% 25% 50% 25%;
+  --card-bg: rgba(31, 25, 32, 0.87);
+  --card-border: rgba(238, 230, 218, 0.12);
+  --card-border-hover: rgba(184, 198, 106, 0.36);
+  --card-shadow: 0 22px 50px -30px #000, inset 0 1px rgba(238, 230, 218, 0.025);
+  --card-shadow-hover: 0 28px 62px -31px rgba(0, 0, 0, 0.92), inset 3px 0 rgba(184, 198, 106, 0.13);
+  --card-blur: blur(11px);
+  --card-sheen:
+    radial-gradient(ellipse at 100% 0, rgba(184, 198, 106, 0.055), transparent 34%),
+    linear-gradient(115deg, rgba(255, 255, 255, 0.025), transparent 28%);
+  --card-sheen-opacity: 1;
+  --input-bg: rgba(8, 6, 9, 0.66);
+  --dot-glow: 0 0 7px color-mix(in srgb, currentColor 55%, transparent);
+  --brand-filter: drop-shadow(0 0 10px rgba(184, 198, 106, 0.2));
+  --nav-active-inset: auto 9px 4px 9px;
+  --nav-active-width: auto;
+  --nav-active-height: 1px;
+  --nav-active-radius: 100%;
+  --nav-active-light: 0 0 7px rgba(184, 198, 106, 0.5);
+  --shell-texture:
+    radial-gradient(ellipse at 82% 3%, rgba(184, 198, 106, 0.095), transparent 30rem),
+    radial-gradient(ellipse at 15% 95%, rgba(109, 45, 74, 0.2), transparent 34rem), #110f13;
+  --shell-veil: repeating-radial-gradient(
+    ellipse at 90% 10%,
+    transparent 0 34px,
+    rgba(184, 198, 106, 0.018) 35px 36px,
+    transparent 37px 54px
+  );
+  --shell-veil-opacity: 0.8;
+  --shell-grain: radial-gradient(
+    ellipse at 20% 30%,
+    rgba(238, 230, 218, 0.08) 0 0.5px,
+    transparent 0.7px
+  );
+  --shell-grain-blend: soft-light;
+  --shell-grain-opacity: 0.17;
+  --panel-tag-bg: #30262e;
+  --panel-tag-border: rgba(184, 198, 106, 0.48);
+  --panel-tag-color: #d5df88;
+  --panel-tag-radius: 10px 2px 10px 2px;
+  --panel-tag-tracking: 0.18em;
+  --panel-tag-pad: 3px 11px;
+  --panel-tag-shadow: 0 4px 12px -7px #000;
+  --panel-corner-color: rgba(184, 198, 106, 0.16);
+  --waterline-color: #b8c66a;
+  --waterline-opacity: 0.34;
+  --waterline-speed: 18s;
+  --progress-stripe-opacity: 0.12;
+}
+
+[data-theme="night-orchard"] .brand-name {
+  font-style: italic;
+}
+[data-theme="night-orchard"] .brand-mark {
+  color: var(--accent);
+}
+[data-theme="night-orchard"] .page-title::after {
+  content: " ·";
+  color: #6d2d4a;
+}
+[data-theme="night-orchard"] .card h3 {
+  color: #d5df88;
+}
+[data-theme="night-orchard"] .nav-label::before {
+  content: "✦";
+  color: #6d2d4a;
+  font-size: 8px;
+}
+[data-theme="night-orchard"] .widget-slot:nth-child(even) .panel-tag {
+  border-color: rgba(200, 102, 111, 0.42);
+}
+[data-theme="night-orchard"] .progress-fill {
+  border-radius: 100% 2px 100% 2px;
+}

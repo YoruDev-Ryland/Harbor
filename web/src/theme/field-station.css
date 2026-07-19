@@ -1,0 +1,109 @@
+/* ── Field Station ──────────────────────────────────────────────────
+   A 1960s research outpost: waxed canvas, lichen paint, survey flags,
+   stencil legends and the honest wear of equipment made to be used. */
+
+[data-theme="field-station"] {
+  --bg-deep: #20251d;
+  --bg: #293026;
+  --bg-raised: #353d2d;
+  --sidebar-bg: rgba(31, 37, 28, 0.91);
+  --sidebar-blur: blur(8px);
+  --sidebar-shadow: 16px 0 42px -30px #11150e;
+  --line: rgba(240, 234, 213, 0.1);
+  --line-strong: rgba(240, 234, 213, 0.23);
+  --hover: rgba(240, 234, 213, 0.06);
+  --active: rgba(224, 122, 63, 0.13);
+  --active-glow: inset 0 0 0 1px rgba(224, 122, 63, 0.34);
+  --text: #f0ead5;
+  --text-dim: #bab9a4;
+  --text-faint: #858873;
+  --accent: #e07a3f;
+  --accent-strong: #f39457;
+  --accent-contrast: #26150c;
+  --ok: #9eb66d;
+  --warn: #d5aa4f;
+  --danger: #df6650;
+  --info: #79a8aa;
+  --font-display: "Big Shoulders Variable", Impact, sans-serif;
+  --font-body: "Fraunces Variable", Georgia, serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-label: "Big Shoulders Variable", Impact, sans-serif;
+  --display-weight: 650;
+  --display-tracking: 0.035em;
+  --radius-sm: 4px;
+  --radius-md: 5px;
+  --radius-lg: 7px;
+  --button-radius: 3px;
+  --pill-radius: 3px;
+  --badge-radius: 3px;
+  --swatch-radius: 2px;
+  --card-bg: rgba(50, 58, 43, 0.88);
+  --card-border: rgba(240, 234, 213, 0.15);
+  --card-border-hover: rgba(224, 122, 63, 0.43);
+  --card-shadow: 4px 7px 0 rgba(15, 18, 13, 0.24), 0 20px 38px -28px #090b08;
+  --card-shadow-hover: 5px 9px 0 rgba(15, 18, 13, 0.2), 0 26px 45px -28px #090b08;
+  --card-blur: blur(5px);
+  --card-sheen:
+    linear-gradient(135deg, rgba(240, 234, 213, 0.045), transparent 32%),
+    repeating-linear-gradient(90deg, rgba(240, 234, 213, 0.018) 0 1px, transparent 1px 5px);
+  --card-sheen-opacity: 1;
+  --input-bg: rgba(19, 24, 17, 0.68);
+  --dot-glow: none;
+  --brand-filter: none;
+  --nav-active-inset: 7px auto 7px 5px;
+  --nav-active-width: 3px;
+  --nav-active-height: auto;
+  --nav-active-radius: 0;
+  --shell-texture:
+    radial-gradient(ellipse at 76% -10%, rgba(224, 122, 63, 0.12), transparent 35rem),
+    linear-gradient(128deg, #20251d, #2b3227 48%, #22281e);
+  --shell-veil:
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(240, 234, 213, 0.022) 23px 24px),
+    repeating-linear-gradient(90deg, transparent 0 23px, rgba(240, 234, 213, 0.018) 23px 24px);
+  --shell-veil-opacity: 0.65;
+  --shell-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M0 2h12M0 8h12' stroke='%23f0ead5' stroke-opacity='.045' stroke-width='.35' stroke-dasharray='3 2'/%3E%3C/svg%3E");
+  --shell-grain-blend: soft-light;
+  --shell-grain-opacity: 0.75;
+  --panel-tag-bg: #e07a3f;
+  --panel-tag-border: #f39457;
+  --panel-tag-color: #26150c;
+  --panel-tag-radius: 2px;
+  --panel-tag-tracking: 0.19em;
+  --panel-tag-rotate: -0.65deg;
+  --panel-tag-shadow: 2px 3px 0 rgba(12, 15, 10, 0.32);
+  --panel-tag-pad: 3px 10px;
+  --waterline-color: #f0ead5;
+  --waterline-opacity: 0.26;
+  --waterline-speed: 10s;
+  --waterline-mask: repeating-linear-gradient(90deg, #000 0 8px, transparent 8px 13px);
+  --progress-stripe-opacity: 0.32;
+}
+
+[data-theme="field-station"] .page-title,
+[data-theme="field-station"] .brand-name,
+[data-theme="field-station"] .card h3 {
+  text-transform: uppercase;
+}
+[data-theme="field-station"] .nav-label::after {
+  background: repeating-linear-gradient(90deg, var(--line-strong) 0 4px, transparent 4px 8px);
+}
+[data-theme="field-station"] .btn,
+[data-theme="field-station"] .filter-chip {
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+}
+[data-theme="field-station"] .widget-slot:nth-child(even) .panel-tag {
+  --panel-tag-rotate: 0.55deg;
+}
+/* the top-right plaques share the tag's orange fill — keep their ink dark so it reads */
+[data-theme="field-station"] .panel-meta,
+[data-theme="field-station"] .panel-gear {
+  color: var(--panel-tag-color);
+}
+[data-theme="field-station"] .panel-gear:hover {
+  color: var(--accent-contrast);
+  border-color: var(--panel-tag-border);
+}
+[data-theme="field-station"] .progress {
+  border: 1px solid rgba(240, 234, 213, 0.12);
+}

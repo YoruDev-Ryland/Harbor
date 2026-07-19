@@ -1,0 +1,109 @@
+/* ── Darkroom ───────────────────────────────────────────────────────
+   A working photographic darkroom. Near-black aubergine, warm paper,
+   restrained safelight red, contact-sheet frames and film perforations. */
+
+[data-theme="darkroom"] {
+  --bg-deep: #080607;
+  --bg: #0e0a0c;
+  --bg-raised: #191315;
+  --sidebar-bg: rgba(10, 7, 8, 0.9);
+  --sidebar-blur: blur(18px);
+  --sidebar-shadow: 22px 0 52px -38px rgba(228, 91, 71, 0.35);
+  --line: rgba(238, 229, 220, 0.09);
+  --line-strong: rgba(238, 229, 220, 0.2);
+  --hover: rgba(238, 229, 220, 0.055);
+  --active: rgba(228, 91, 71, 0.12);
+  --active-glow: inset 3px 0 0 #e45b47;
+  --text: #eee5dc;
+  --text-dim: #b5a7a2;
+  --text-faint: #776a69;
+  --accent: #e45b47;
+  --accent-strong: #ff826b;
+  --accent-contrast: #160706;
+  --ok: #94b57d;
+  --warn: #d7aa64;
+  --danger: #f06458;
+  --info: #88a6b5;
+  --font-display: "Big Shoulders Variable", Impact, sans-serif;
+  --font-body: "Fraunces Variable", Georgia, serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-label: "JetBrains Mono Variable", ui-monospace, monospace;
+  --display-weight: 580;
+  --display-tracking: 0.045em;
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 3px;
+  --button-radius: 1px;
+  --pill-radius: 2px;
+  --badge-radius: 1px;
+  --swatch-radius: 1px;
+  --card-bg: rgba(23, 17, 19, 0.9);
+  --card-border: rgba(238, 229, 220, 0.13);
+  --card-border-hover: rgba(228, 91, 71, 0.48);
+  --card-shadow: 0 22px 48px -30px #000;
+  --card-shadow-hover: 0 28px 58px -32px rgba(228, 91, 71, 0.22);
+  --card-blur: blur(7px);
+  --card-sheen:
+    linear-gradient(112deg, rgba(255, 255, 255, 0.045), transparent 24%),
+    repeating-linear-gradient(90deg, transparent 0 72px, rgba(238, 229, 220, 0.018) 72px 73px);
+  --card-sheen-opacity: 1;
+  --input-bg: rgba(5, 3, 4, 0.8);
+  --dot-glow: 0 0 10px currentColor;
+  --brand-filter: drop-shadow(0 0 8px rgba(228, 91, 71, 0.42));
+  --nav-active-inset: 6px auto 6px 0;
+  --nav-active-width: 2px;
+  --nav-active-height: auto;
+  --nav-active-radius: 0;
+  --nav-active-light: 0 0 9px #e45b47;
+  --shell-texture:
+    radial-gradient(ellipse at 72% -15%, rgba(228, 91, 71, 0.13), transparent 46%),
+    linear-gradient(118deg, #080607, #120b0e 55%, #080607);
+  --shell-veil: repeating-linear-gradient(
+    90deg,
+    transparent 0 11.5%,
+    rgba(238, 229, 220, 0.025) 11.5% 11.65%
+  );
+  --shell-veil-opacity: 0.75;
+  --shell-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.32'/%3E%3C/svg%3E");
+  --shell-grain-blend: soft-light;
+  --shell-grain-opacity: 0.18;
+  --panel-tag-bg: #0b0809;
+  --panel-tag-border: rgba(238, 229, 220, 0.28);
+  --panel-tag-color: #d8c7bd;
+  --panel-tag-radius: 0;
+  --panel-tag-tracking: 0.18em;
+  --panel-tag-pad: 3px 9px;
+  --waterline-color: var(--accent);
+  --waterline-opacity: 0.36;
+  --waterline-speed: 12s;
+  --waterline-mask: linear-gradient(
+    90deg,
+    #000 0 22%,
+    transparent 22% 25%,
+    #000 25% 47%,
+    transparent 47% 50%,
+    #000 50% 72%,
+    transparent 72% 75%,
+    #000 75% 97%,
+    transparent 97%
+  );
+}
+
+[data-theme="darkroom"] .page-title,
+[data-theme="darkroom"] .brand-name {
+  text-transform: uppercase;
+}
+[data-theme="darkroom"] .card {
+  outline: 1px solid rgba(0, 0, 0, 0.65);
+  outline-offset: -5px;
+}
+[data-theme="darkroom"] .panel-tag::before {
+  content: "◼ ";
+  color: var(--accent);
+}
+[data-theme="darkroom"] .stat dd {
+  font-family: var(--font-mono);
+}
+[data-theme="darkroom"] .sidebar-footer {
+  border-top-style: dashed;
+}

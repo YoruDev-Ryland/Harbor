@@ -1,0 +1,48 @@
+services:
+  ntfy:
+    # Version-pinned official image. Review ntfy release notes before changing it.
+    image: binwiederhier/ntfy:v2.23.0@sha256:b32b4221a64ec2e7c000f0782b2feef24022e1a09a24e531640f4cbba6cfa1e6
+    command: serve
+    restart: unless-stopped
+    init: true
+    user: "${NTFY_UID:-1000}:${NTFY_GID:-1000}"
+    environment:
+      TZ: ${NTFY_TIMEZONE:-UTC}
+      NTFY_BASE_URL: ${NTFY_BASE_URL:?Set the public HTTPS ntfy URL}
+      NTFY_LISTEN_HTTP: ":8080"
+      NTFY_BEHIND_PROXY: "true"
+      NTFY_CACHE_FILE: /var/lib/ntfy/cache.db
+      NTFY_AUTH_FILE: /var/lib/ntfy/auth.db
+      NTFY_AUTH_DEFAULT_ACCESS: deny-all
+      NTFY_ENABLE_LOGIN: "true"
+      NTFY_ENABLE_SIGNUP: "false"
+      # Needed for instant notification delivery to the official iOS app.
+      NTFY_UPSTREAM_BASE_URL: https://ntfy.sh
+      NTFY_MESSAGE_SIZE_LIMIT: 4K
+    volumes:
+      - ./data:/var/lib/ntfy
+    # The host listener is loopback-only. Put an HTTPS reverse proxy in front of it.
+    ports:
+      - "127.0.0.1:${NTFY_PORT:-8085}:8080"
+    networks:
+      - harbor
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 100
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  harbor:
+    external: true
+    name: ${HARBOR_NETWORK:-harbor_default}

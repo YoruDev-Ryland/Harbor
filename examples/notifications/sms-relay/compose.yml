@@ -1,0 +1,52 @@
+services:
+  sms-relay:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      SIGNALWIRE_SPACE: ${SIGNALWIRE_SPACE:?Set the SignalWire space hostname}
+      SIGNALWIRE_PROJECT_ID_FILE: /run/secrets/signalwire_project_id
+      SIGNALWIRE_API_TOKEN_FILE: /run/secrets/signalwire_api_token
+      SIGNALWIRE_FROM_NUMBER: ${SIGNALWIRE_FROM_NUMBER:?Set the sending number}
+      RELAY_API_KEY_FILE: /run/secrets/relay_api_key
+      SMS_ALLOWED_RECIPIENTS: ${SMS_ALLOWED_RECIPIENTS:?Set at least one allowed recipient}
+      RELAY_RATE_LIMIT_PER_MINUTE: ${RELAY_RATE_LIMIT_PER_MINUTE:-6}
+      RELAY_DAILY_LIMIT: ${RELAY_DAILY_LIMIT:-100}
+      MAX_MESSAGE_CHARS: ${MAX_MESSAGE_CHARS:-480}
+      UPSTREAM_TIMEOUT_MS: ${UPSTREAM_TIMEOUT_MS:-10000}
+    secrets:
+      - signalwire_project_id
+      - signalwire_api_token
+      - relay_api_key
+    networks:
+      - harbor
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=8m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 50
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+secrets:
+  signalwire_project_id:
+    file: ./secrets/signalwire_project_id
+  signalwire_api_token:
+    file: ./secrets/signalwire_api_token
+  relay_api_key:
+    file: ./secrets/relay_api_key
+
+networks:
+  harbor:
+    external: true
+    name: ${HARBOR_NETWORK:-harbor_default}

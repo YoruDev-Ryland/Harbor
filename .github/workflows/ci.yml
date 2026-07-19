@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source:
+    name: Source quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.18.0
+          cache: npm
+      - run: npm ci
+      - run: npm run ci
+
+  browser:
+    name: Browser and accessibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.18.0
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Upload browser diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-diagnostics
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+  container:
+    name: Container and OS policy (${{ matrix.platform }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            suffix: amd64
+          - platform: linux/arm64
+            suffix: arm64
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.18.0
+          cache: npm
+      - run: npm ci
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+        with:
+          image: tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+          platforms: arm64
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        with:
+          version: v0.35.0
+      - name: Build release-equivalent image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          load: true
+          tags: harbor-ci:${{ github.sha }}-${{ matrix.suffix }}
+          build-args: |
+            HARBOR_VERSION=0.1.0-ci
+            HARBOR_REVISION=${{ github.sha }}
+            HARBOR_SOURCE=${{ github.server_url }}/${{ github.repository }}
+      - name: Hardened runtime and persistence smoke
+        env:
+          HARBOR_TEST_IMAGE: harbor-ci:${{ github.sha }}-${{ matrix.suffix }}
+          HARBOR_TEST_VERSION: 0.1.0-ci
+        run: npm run test:container
+      - name: Build SMS relay helper template
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: examples/notifications/sms-relay
+          platforms: ${{ matrix.platform }}
+          load: true
+          tags: harbor-sms-relay-ci:${{ github.sha }}-${{ matrix.suffix }}
+      - name: SMS relay helper security smoke
+        env:
+          HARBOR_SMS_RELAY_TEST_IMAGE: harbor-sms-relay-ci:${{ github.sha }}-${{ matrix.suffix }}
+        run: npm run test:helper
+      - name: Install checksum-verified Trivy 0.72.0
+        run: node scripts/install-trivy.mjs "$RUNNER_TEMP/trivy"
+      - name: Block fixable Critical/High image vulnerabilities
+        run: >-
+          "$RUNNER_TEMP/trivy/trivy" image
+          --exit-code 1
+          --ignore-unfixed
+          --severity CRITICAL,HIGH
+          --pkg-types os,library
+          --scanners vuln
+          --skip-version-check
+          "harbor-ci:${{ github.sha }}-${{ matrix.suffix }}"
+      - name: Block fixable Critical/High helper-image vulnerabilities
+        run: >-
+          "$RUNNER_TEMP/trivy/trivy" image
+          --exit-code 1
+          --ignore-unfixed
+          --severity CRITICAL,HIGH
+          --pkg-types os,library
+          --scanners vuln
+          --skip-version-check
+          "harbor-sms-relay-ci:${{ github.sha }}-${{ matrix.suffix }}"

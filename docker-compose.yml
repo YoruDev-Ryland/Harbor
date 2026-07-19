@@ -1,0 +1,42 @@
+# Standalone / local-testing compose. For the real Traefik + Google OAuth
+# stack deployment, use deploy/harbor.yml as a services/*.yml include —
+# instructions are at the top of that file.
+services:
+  harbor:
+    build: .
+    image: harbor-dashboard:latest
+    container_name: harbor
+    restart: unless-stopped
+    init: true
+    read_only: true
+    stop_grace_period: 15s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    ports:
+      # Safe standalone default: only this host can reach Harbor directly.
+      - "127.0.0.1:9090:9090"
+    environment:
+      - HARBOR_SECRET=${HARBOR_SECRET:-} # blank = auto-generated into /data
+      - HARBOR_PREVIOUS_SECRET_FILE=${HARBOR_PREVIOUS_SECRET_FILE:-}
+      - SESSION_DAYS=${SESSION_DAYS:-7}
+      - AUTH_PROXY=${AUTH_PROXY:-false}
+      - AUTH_PROXY_PROVIDER=${AUTH_PROXY_PROVIDER:-proxy}
+      - PUBLIC_URL=${PUBLIC_URL:-}
+      - ADMIN_USERS=${ADMIN_USERS:-}
+      # Private Docker/LAN integrations work by default. Set strict mode to true
+      # only if you want them restricted to the CIDRs/service names below.
+      - HARBOR_OUTBOUND_STRICT_PRIVATE=${HARBOR_OUTBOUND_STRICT_PRIVATE:-false}
+      - HARBOR_OUTBOUND_ALLOW_CIDRS=${HARBOR_OUTBOUND_ALLOW_CIDRS:-}
+      - HARBOR_OUTBOUND_ALLOW_HOSTS=${HARBOR_OUTBOUND_ALLOW_HOSTS:-}
+      - HARBOR_AUDIT_RETENTION_DAYS=${HARBOR_AUDIT_RETENTION_DAYS:-180}
+      - HARBOR_AUDIT_MAX_ROWS=${HARBOR_AUDIT_MAX_ROWS:-20000}
+      - HARBOR_SMTP_CA_FILE=${HARBOR_SMTP_CA_FILE:-}
+    volumes:
+      - harbor-data:/data
+
+volumes:
+  harbor-data:

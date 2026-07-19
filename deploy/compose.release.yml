@@ -1,0 +1,41 @@
+# Pull-based standalone installation for published Harbor images.
+# Set HARBOR_IMAGE to an immutable release digest whenever possible:
+#   ghcr.io/OWNER/harbor@sha256:...
+services:
+  harbor:
+    image: ${HARBOR_IMAGE:?Set the published Harbor image tag or digest}
+    pull_policy: always
+    container_name: harbor
+    restart: unless-stopped
+    init: true
+    read_only: true
+    stop_grace_period: 15s
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    ports:
+      - "127.0.0.1:${HARBOR_PORT:-9090}:9090"
+    environment:
+      HARBOR_SECRET_FILE: /run/secrets/harbor_secret
+      SESSION_DAYS: ${SESSION_DAYS:-7}
+      AUTH_PROXY: "false"
+      PUBLIC_URL: ${PUBLIC_URL:-}
+      HARBOR_OUTBOUND_STRICT_PRIVATE: ${HARBOR_OUTBOUND_STRICT_PRIVATE:-false}
+      HARBOR_OUTBOUND_ALLOW_CIDRS: ${HARBOR_OUTBOUND_ALLOW_CIDRS:-}
+      HARBOR_OUTBOUND_ALLOW_HOSTS: ${HARBOR_OUTBOUND_ALLOW_HOSTS:-}
+      HARBOR_AUDIT_RETENTION_DAYS: ${HARBOR_AUDIT_RETENTION_DAYS:-180}
+      HARBOR_AUDIT_MAX_ROWS: ${HARBOR_AUDIT_MAX_ROWS:-20000}
+    secrets:
+      - harbor_secret
+    volumes:
+      - harbor-data:/data
+
+secrets:
+  harbor_secret:
+    file: ${HARBOR_SECRET_HOST_FILE:-./harbor_secret}
+
+volumes:
+  harbor-data:

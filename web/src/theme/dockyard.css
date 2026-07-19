@@ -1,0 +1,124 @@
+/* ── Dockyard ────────────────────────────────────────────────────────
+   Harbor's signature theme. A working dock after dark: deep water
+   navy, weathered brass, buoy lights, a faint lamp-glow over the
+   quay. Fraunces gives headings the character of old shipping-line
+   lettering; numbers are set in a mono like a manifest.             */
+
+[data-theme="dockyard"] {
+  --bg-deep: #06111a;
+  --bg: #0a1723;
+  --bg-raised: #12263a;
+  --sidebar-bg: rgba(6, 15, 24, 0.78);
+  --sidebar-blur: blur(16px);
+  --sidebar-shadow: 18px 0 48px -34px rgba(0, 0, 0, 0.9);
+
+  --line: rgba(146, 178, 210, 0.1);
+  --line-strong: rgba(146, 178, 210, 0.22);
+  --hover: rgba(146, 178, 210, 0.07);
+  --active: rgba(217, 164, 65, 0.12);
+  --active-glow: inset 2px 0 0 var(--accent);
+
+  --text: #edf6fb;
+  --text-dim: #9fb8cc;
+  --text-faint: #668196;
+
+  --accent: #f0b64a;
+  --accent-strong: #ffd06f;
+  --accent-contrast: #1c1204;
+
+  --ok: #4fc98c;
+  --warn: #e0b04b;
+  --danger: #e06060;
+  --info: #5aa7d6;
+
+  --font-display: "Fraunces Variable", "Fraunces", Georgia, serif;
+  --font-body: "Fraunces Variable", Georgia, serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, monospace;
+  --font-label: "Big Shoulders Variable", "Big Shoulders", var(--font-mono);
+  --display-weight: 620;
+  --display-tracking: 0;
+
+  --radius-sm: 7px;
+  --radius-md: 9px;
+  --radius-lg: 11px;
+  --button-radius: 7px;
+  --pill-radius: 999px;
+  --badge-radius: 999px;
+
+  --card-bg: rgba(15, 31, 47, 0.82);
+  --card-border: rgba(146, 178, 210, 0.16);
+  --card-border-hover: rgba(240, 182, 74, 0.34);
+  --card-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.65);
+  --card-shadow-hover: 0 24px 58px -26px rgba(0, 0, 0, 0.78);
+  --card-blur: blur(12px);
+  --card-sheen:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.055), transparent 34%),
+    linear-gradient(180deg, rgba(240, 182, 74, 0.03), transparent 46%);
+  --card-sheen-opacity: 1;
+  --input-bg: rgba(6, 13, 21, 0.65);
+
+  --dot-glow: 0 0 7px color-mix(in srgb, currentColor 0%, transparent);
+  --brand-filter: drop-shadow(0 0 10px rgba(240, 182, 74, 0.35));
+  --nav-active-inset: auto auto 7px 10px;
+  --nav-active-width: 28px;
+  --nav-active-height: 2px;
+  --nav-active-radius: 99px;
+  --nav-active-light: 0 0 12px rgba(240, 182, 74, 0.6);
+
+  /* the quay at night: a warm lamp high left, cold moonlight right,
+     and rows of faint ripple lines low in the water */
+  --shell-texture:
+    radial-gradient(900px 500px at 12% -8%, rgba(240, 182, 74, 0.11), transparent 62%),
+    radial-gradient(1100px 600px at 88% -12%, rgba(90, 167, 214, 0.085), transparent 60%),
+    repeating-linear-gradient(
+      180deg,
+      transparent 0px,
+      transparent 90px,
+      rgba(146, 178, 210, 0.016) 90px,
+      rgba(146, 178, 210, 0.016) 91px
+    );
+  --shell-veil: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0.035),
+    transparent 18% 78%,
+    rgba(240, 182, 74, 0.035)
+  );
+  --shell-grain: radial-gradient(
+    circle at 20% 30%,
+    rgba(255, 255, 255, 0.1) 0 1px,
+    transparent 1px
+  );
+  --shell-grain-opacity: 0.11;
+
+  /* plaque tags: brass nameplates screwed onto the panel edge */
+  --panel-tag-bg: linear-gradient(180deg, #17304a, #0e2135);
+  --panel-tag-border: rgba(240, 182, 74, 0.42);
+  --panel-tag-color: var(--accent);
+  --panel-tag-radius: 6px;
+  --panel-tag-tracking: 0.24em;
+  --panel-tag-shadow: 0 3px 10px -4px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  /* the waterline drifts like slack water under the quay lights */
+  --waterline-color: var(--accent);
+  --waterline-opacity: 0.5;
+  --waterline-speed: 8s;
+}
+
+/* rope-cleat divider above the sidebar footer */
+[data-theme="dockyard"] .sidebar-footer {
+  border-top: none;
+  position: relative;
+  padding-top: 14px;
+}
+
+[data-theme="dockyard"] .sidebar-footer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  height: 3px;
+  background-repeat: repeat-x;
+  background-size: 12px 3px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='3' viewBox='0 0 12 3'%3E%3Ccircle cx='3' cy='1.5' r='1.1' fill='%2392b2d2' fill-opacity='.22'/%3E%3C/svg%3E");
+}

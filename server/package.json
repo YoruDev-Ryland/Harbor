@@ -1,0 +1,29 @@
+{
+  "name": "@harbor/server",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "cli": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/static": "^10.1.0",
+    "@types/nodemailer": "^8.0.1",
+    "better-sqlite3": "^11.9.1",
+    "fastify": "^5.3.2",
+    "ipaddr.js": "^2.4.0",
+    "nodemailer": "^9.0.3",
+    "undici": "^7.28.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  }
+}

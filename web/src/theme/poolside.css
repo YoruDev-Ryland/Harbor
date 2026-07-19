@@ -1,0 +1,112 @@
+/* ── Poolside ───────────────────────────────────────────────────────
+   A sun-struck 1970s leisure club: chalky terrazzo, tiled water,
+   cabana coral and bold municipal wayfinding. Crisp, bright, physical. */
+
+[data-theme="poolside"] {
+  --bg-deep: #d5d0bf;
+  --bg: #e5dfcc;
+  --bg-raised: #f6f0dc;
+  --sidebar-bg: rgba(246, 240, 220, 0.88);
+  --sidebar-blur: blur(10px);
+  --sidebar-shadow: 14px 0 0 rgba(8, 127, 123, 0.08);
+  --line: rgba(38, 50, 53, 0.12);
+  --line-strong: rgba(38, 50, 53, 0.25);
+  --hover: rgba(8, 127, 123, 0.06);
+  --active: rgba(8, 127, 123, 0.1);
+  --active-glow: inset 4px 0 0 #087f7b;
+  --text: #263235;
+  --text-dim: #586667;
+  --text-faint: #8a887c;
+  --accent: #087f7b;
+  --accent-strong: #00635f;
+  --accent-contrast: #fff9e7;
+  --ok: #39835b;
+  --warn: #bd822a;
+  --danger: #d85f4b;
+  --info: #2c7797;
+  --font-display: "Big Shoulders Variable", Impact, sans-serif;
+  --font-body: "Fraunces Variable", Georgia, serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+  --font-label: "Big Shoulders Variable", Impact, sans-serif;
+  --display-weight: 720;
+  --display-tracking: 0.025em;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --button-radius: 0;
+  --pill-radius: 999px;
+  --badge-radius: 0;
+  --swatch-radius: 50%;
+  --card-bg: rgba(248, 243, 224, 0.91);
+  --card-border: rgba(38, 50, 53, 0.17);
+  --card-border-hover: rgba(8, 127, 123, 0.5);
+  --card-shadow: 7px 7px 0 rgba(8, 127, 123, 0.1);
+  --card-shadow-hover: 10px 10px 0 rgba(216, 95, 75, 0.13);
+  --card-blur: blur(5px);
+  --card-sheen:
+    linear-gradient(90deg, rgba(8, 127, 123, 0.04) 0 8px, transparent 8px),
+    linear-gradient(rgba(255, 255, 255, 0.45), transparent 42%);
+  --card-sheen-opacity: 1;
+  --input-bg: rgba(255, 252, 238, 0.9);
+  --dot-glow: none;
+  --brand-filter: none;
+  --nav-active-inset: 7px auto 7px 0;
+  --nav-active-width: 4px;
+  --nav-active-height: auto;
+  --nav-active-radius: 0;
+  --shell-texture:
+    linear-gradient(112deg, transparent 0 67%, rgba(8, 127, 123, 0.07) 67% 79%, transparent 79%),
+    #ded9c8;
+  --shell-veil:
+    radial-gradient(circle, rgba(38, 50, 53, 0.12) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(216, 95, 75, 0.1) 0 1.5px, transparent 2px),
+    radial-gradient(circle, rgba(8, 127, 123, 0.09) 0 1px, transparent 1.5px);
+  --shell-veil-opacity: 0.72;
+  --shell-grain: none;
+  --shell-grain-opacity: 0;
+  --panel-tag-bg: #087f7b;
+  --panel-tag-border: transparent;
+  --panel-tag-color: #fff9e7;
+  --panel-tag-radius: 0;
+  --panel-tag-tracking: 0.17em;
+  --panel-tag-pad: 4px 12px;
+  --panel-tag-shadow: 4px 3px 0 rgba(38, 50, 53, 0.14);
+  --waterline-color: #087f7b;
+  --waterline-opacity: 0.48;
+  --waterline-speed: 7s;
+  --waterline-mask: repeating-linear-gradient(90deg, #000 0 18px, transparent 18px 21px);
+  --progress-stripe-opacity: 0.16;
+}
+
+[data-theme="poolside"] .shell::before {
+  background-size:
+    43px 47px,
+    71px 67px,
+    89px 83px;
+}
+[data-theme="poolside"] .brand-mark {
+  color: #d85f4b;
+}
+[data-theme="poolside"] .brand-name,
+[data-theme="poolside"] .page-title,
+[data-theme="poolside"] .card h3 {
+  text-transform: uppercase;
+}
+[data-theme="poolside"] .page-title {
+  color: var(--accent);
+}
+[data-theme="poolside"] .nav-label::after {
+  height: 3px;
+  background: #d85f4b;
+  opacity: 0.65;
+}
+[data-theme="poolside"] .widget-slot:nth-child(3n + 2) .panel-tag {
+  --panel-tag-bg: #d85f4b;
+}
+[data-theme="poolside"] .btn {
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+}
+[data-theme="poolside"] .progress {
+  border: 1px solid rgba(38, 50, 53, 0.13);
+}
