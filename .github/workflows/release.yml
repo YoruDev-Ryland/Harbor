@@ -29,7 +29,8 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      actions: read
+      contents: write
       packages: write
       id-token: write
     outputs:
@@ -102,10 +103,8 @@ jobs:
           format: spdx-json
           syft-version: v1.48.0
           output-file: harbor-${{ steps.version.outputs.value }}.spdx.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: harbor-${{ steps.version.outputs.value }}-sbom
-          path: harbor-${{ steps.version.outputs.value }}.spdx.json
+          upload-artifact: false
+          upload-release-assets: true
 
   pull-install:
     name: Pull-based Compose verification
