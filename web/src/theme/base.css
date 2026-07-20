@@ -476,14 +476,13 @@ select {
   height: 100%;
 }
 
-.widget-slot > .widget-locked {
+.widget-slot > .widget-frame {
   position: relative;
   height: 100%;
   min-height: 0;
 }
 
-.widget-slot > .widget-locked > .widget,
-.widget-slot > .widget {
+.widget-slot > .widget-frame > .widget {
   height: calc(100% - 12px);
   min-height: 0;
   overflow: hidden;
@@ -507,12 +506,12 @@ select {
   min-height: 0;
 }
 
-.widget-slot.editing > .widget-locked {
+.widget-slot.editing > .widget-frame {
   height: calc(100% - 44px);
 }
 
 /* block interaction with the embedded widget while arranging the layout */
-.widget-slot.editing .widget-locked::after {
+.widget-slot.editing .widget-frame::after {
   content: "";
   position: absolute;
   inset: 0;

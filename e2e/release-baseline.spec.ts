@@ -38,7 +38,8 @@ test("setup, keyboard dialogs, responsive settings, sign-out, and local login", 
 
   await page.evaluate(async () => {
     const layout = [
-      { id: "calendar", cols: 2, rows: 2 },
+      { id: "stats", cols: 4, rows: 1 },
+      { id: "calendar", cols: 2, rows: 2, options: { view: "month" } },
       { id: "nowplaying", cols: 2, rows: 1 },
       { id: "downloads", cols: 2, rows: 1 },
     ];
@@ -50,12 +51,20 @@ test("setup, keyboard dialogs, responsive settings, sign-out, and local login", 
     if (!response.ok) throw new Error(`layout setup failed: ${response.status}`);
   });
   await page.reload();
+  await page.addStyleTag({ content: ".widget { animation: none !important; }" });
+  await expect(page.locator('[data-widget-id="stats"]')).toBeVisible();
   await expect(page.locator('[data-widget-id="calendar"]')).toBeVisible();
   await expect(page.locator('[data-widget-id="nowplaying"]')).toBeVisible();
   await expect(page.locator('[data-widget-id="downloads"]')).toBeVisible();
   const packed = await page.evaluate(() => {
-    const box = (id: string) =>
-      document.querySelector<HTMLElement>(`[data-widget-id="${id}"]`)!.getBoundingClientRect();
+    const slotFor = (id: string) =>
+      document.querySelector<HTMLElement>(`[data-widget-id="${id}"]`)!;
+    const box = (id: string) => slotFor(id).getBoundingClientRect();
+    const card = (id: string) =>
+      slotFor(id)
+        .querySelector<HTMLElement>(":scope > .widget-frame > .widget")!
+        .getBoundingClientRect();
+    const statsCard = card("stats");
     const tall = box("calendar");
     const upper = box("nowplaying");
     const lower = box("downloads");
@@ -64,20 +73,54 @@ test("setup, keyboard dialogs, responsive settings, sign-out, and local login", 
       rightOfTall: upper.x > tall.x,
       stacked: lower.y > upper.y,
       alignedBottoms: Math.abs(tall.bottom - lower.bottom),
+      appliedCardsStayInSlots: ["stats", "calendar", "nowplaying", "downloads"].every((id) => {
+        const slot = box(id);
+        const widget = card(id);
+        return widget.top >= slot.top && widget.bottom <= slot.bottom + 1;
+      }),
+      visibleRowGap: tall.top - statsCard.bottom,
+      calendarWallHeight:
+        slotFor("calendar").querySelector<HTMLElement>(".cal-wall")?.getBoundingClientRect()
+          .height ?? 0,
     };
   });
   expect(packed.rightOfTall).toBe(true);
   expect(packed.stacked).toBe(true);
   expect(packed.sameRightColumn).toBeLessThanOrEqual(1);
   expect(packed.alignedBottoms).toBeLessThanOrEqual(1);
+  expect(packed.appliedCardsStayInSlots).toBe(true);
+  expect(packed.visibleRowGap).toBeGreaterThanOrEqual(18);
+  expect(packed.visibleRowGap).toBeLessThanOrEqual(22);
+  expect(packed.calendarWallHeight).toBeGreaterThan(250);
+
+  const constrainedLongList = await page.evaluate(() => {
+    const slot = document.querySelector<HTMLElement>('[data-widget-id="downloads"]')!;
+    const body = slot.querySelector<HTMLElement>(".widget-body")!;
+    for (let i = 0; i < 30; i += 1) {
+      const row = document.createElement("div");
+      row.style.height = "32px";
+      row.style.flexShrink = "0";
+      row.textContent = `Overflow regression row ${i + 1}`;
+      body.append(row);
+    }
+    const slotBox = slot.getBoundingClientRect();
+    const cardBox = slot.querySelector<HTMLElement>(".widget")!.getBoundingClientRect();
+    return {
+      scrollable: body.scrollHeight > body.clientHeight,
+      cardContained: cardBox.bottom <= slotBox.bottom + 1,
+    };
+  });
+  expect(constrainedLongList.scrollable).toBe(true);
+  expect(constrainedLongList.cardContained).toBe(true);
 
   await page.locator('button[title="captain"]').click();
   await page.getByRole("menuitem", { name: "Edit dashboard layout" }).click();
   await expect(page.getByRole("button", { name: "Save my layout" })).toBeVisible();
   await expect(page.getByRole("button", { name: /^Resize / }).first()).toBeVisible();
   const calendarSlot = page.locator('[data-widget-id="calendar"]');
-  const beforeResize = await calendarSlot.boundingBox();
   const resizeHandle = calendarSlot.getByRole("button", { name: "Resize Release calendar" });
+  await resizeHandle.scrollIntoViewIfNeeded();
+  const beforeResize = await calendarSlot.boundingBox();
   const handleBox = await resizeHandle.boundingBox();
   expect(beforeResize).not.toBeNull();
   expect(handleBox).not.toBeNull();

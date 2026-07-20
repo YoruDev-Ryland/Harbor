@@ -110,7 +110,7 @@ export default function DownloadsWidget(_props: WidgetProps) {
         </div>
       )}
 
-      <div className="widget-body">
+      <div className="widget-body" tabIndex={0} aria-label="Download queue">
         {data?.errors.map((e) => (
           <div className="widget-error" key={e.source.id}>
             {e.source.name}: {e.message}

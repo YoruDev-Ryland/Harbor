@@ -310,7 +310,7 @@ export default function Dashboard() {
                   </button>
                 </div>
               )}
-              <div className={editing ? "widget-locked" : undefined}>
+              <div className="widget-frame">
                 <Widget cols={item.cols} options={options} />
               </div>
               {editing && (
