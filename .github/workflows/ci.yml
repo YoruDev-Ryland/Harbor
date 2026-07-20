@@ -72,7 +72,7 @@ jobs:
         with:
           version: v0.35.0
       - name: Build release-equivalent image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           platforms: ${{ matrix.platform }}
@@ -88,7 +88,7 @@ jobs:
           HARBOR_TEST_VERSION: 0.1.0-ci
         run: npm run test:container
       - name: Build SMS relay helper template
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: examples/notifications/sms-relay
           platforms: ${{ matrix.platform }}
