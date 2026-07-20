@@ -138,7 +138,11 @@ jobs:
           COMPOSE_PROJECT_NAME: harbor-release-verify
         run: |
           openssl rand -hex 32 > "${HARBOR_SECRET_HOST_FILE}"
-          chmod 600 "${HARBOR_SECRET_HOST_FILE}"
+          # The runtime image deliberately runs as uid/gid 1000. Compose file
+          # secrets are bind-mounted with their host ownership, so keep this
+          # test secret private while making it readable by that user.
+          sudo chown 1000:1000 "${HARBOR_SECRET_HOST_FILE}"
+          chmod 400 "${HARBOR_SECRET_HOST_FILE}"
           docker compose -f deploy/compose.release.yml up -d
           for attempt in $(seq 1 60); do
             if curl --fail --silent http://127.0.0.1:19090/api/health/ready; then exit 0; fi

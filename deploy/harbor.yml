@@ -5,6 +5,10 @@
 #      the container runs as uid 1000)
 #   2. Preserve an existing Harbor secret, or for a new install run:
 #        openssl rand -hex 32 > $DOCKERDIR/secrets/harbor_secret
+#      File-backed Compose secrets retain host ownership. Keep the secret
+#      private and readable by Harbor's uid/gid 1000:
+#        chown 1000:1000 $DOCKERDIR/secrets/harbor_secret
+#        chmod 600 $DOCKERDIR/secrets/harbor_secret
 #   3. Copy this file to $DOCKERDIR/services/harbor.yml.
 #   4. Set HARBOR_IMAGE to a published version tag or immutable digest, plus
 #      HARBOR_HOSTNAME, HARBOR_AUTH_MIDDLEWARE, HARBOR_AUTH_PROXY_TRUSTED, and

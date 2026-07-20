@@ -43,7 +43,9 @@ secrets, includes in the root Compose file). Follow the numbered steps at the to
 of that file: preserve the existing `/data` directory and `harbor_secret`, set
 `HARBOR_IMAGE` plus the required hostname/proxy/admin values, add the include, then
 run `docker compose pull harbor && docker compose up -d harbor`. A source checkout
-is not required on the Docker host.
+is not required on the Docker host. Because local Compose file secrets retain host
+ownership, the secret must be owned by uid/gid `1000:1000` with mode `0600`, as
+shown in the deployment template.
 
 Your OAuth middleware (e.g. `chain-oauth@file`) sets `X-Forwarded-User` after Google
 login; Harbor accepts it only when the request arrives directly from Traefik's

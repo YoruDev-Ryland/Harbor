@@ -1,6 +1,10 @@
 # Pull-based standalone installation for published Harbor images.
 # Set HARBOR_IMAGE to an immutable release digest whenever possible:
 #   ghcr.io/OWNER/harbor@sha256:...
+# Compose bind-mounts file-backed secrets with their host ownership. Before
+# starting Harbor, make this file readable only by the container's uid/gid 1000:
+#   chown 1000:1000 "${HARBOR_SECRET_HOST_FILE:-./harbor_secret}"
+#   chmod 600 "${HARBOR_SECRET_HOST_FILE:-./harbor_secret}"
 services:
   harbor:
     image: ${HARBOR_IMAGE:?Set the published Harbor image tag or digest}
