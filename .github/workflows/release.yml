@@ -100,15 +100,22 @@ jobs:
           IMAGE: ${{ steps.image.outputs.value }}
           DIGEST: ${{ steps.build.outputs.digest }}
         run: cosign sign --yes "${IMAGE}@${DIGEST}"
-      - name: Generate downloadable SPDX JSON SBOM
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+      - id: syft
+        name: Install Syft 1.48.0
+        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
-          image: ${{ steps.image.outputs.value }}@${{ steps.build.outputs.digest }}
-          format: spdx-json
           syft-version: v1.48.0
-          output-file: harbor-${{ steps.version.outputs.value }}.spdx.json
-          upload-artifact: false
-          upload-release-assets: true
+      - name: Generate and attach downloadable SPDX JSON SBOM
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE: ${{ steps.image.outputs.value }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          SBOM: harbor-${{ steps.version.outputs.value }}.spdx.json
+          SYFT: ${{ steps.syft.outputs.cmd }}
+        run: |
+          "$SYFT" "${IMAGE}@${DIGEST}" --output "spdx-json=${SBOM}"
+          test -s "$SBOM"
+          gh release upload "$GITHUB_REF_NAME" "$SBOM" --clobber
 
   pull-install:
     name: Pull-based Compose verification
