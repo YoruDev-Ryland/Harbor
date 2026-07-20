@@ -29,7 +29,18 @@ const SETTING_PERM = {
   group_order: "manageBerths",
   // how a calendar event click resolves — a shared, important default, admin-only
   calendar_actions: "manageSettings",
+  scope_reset_time: "manageSettings",
+  scope_reset_timezone: "manageSettings",
 } as const;
+
+function validTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: value }).format();
+    return value.length <= 128;
+  } catch {
+    return false;
+  }
+}
 
 const USER_SELECT = `
   SELECT u.id, u.username, u.email, u.phone, u.notify_email, u.role, u.created_at, u.last_login,
@@ -82,6 +93,11 @@ export function settingsRoutes(app: FastifyInstance): void {
     widget_layout: getSetting("widget_layout", ""),
     group_order: getSetting("group_order", ""),
     calendar_actions: getSetting("calendar_actions", ""),
+    scope_reset_time: getSetting("scope_reset_time", "20:00"),
+    scope_reset_timezone: getSetting(
+      "scope_reset_timezone",
+      process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+    ),
   }));
 
   // Each key is gated independently so an "edit layout" user can save the layout
@@ -99,6 +115,10 @@ export function settingsRoutes(app: FastifyInstance): void {
         if (!req.user!.permissions[perm]) return reply.code(403).send({ error: "forbidden" });
         const max = key === "title" || key === "default_theme" ? 128 : 64_000;
         if (value.length > max) return reply.code(400).send({ error: `${key} is too large` });
+        if (key === "scope_reset_time" && !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value))
+          return reply.code(400).send({ error: "invalid telescope reset time" });
+        if (key === "scope_reset_timezone" && !validTimeZone(value))
+          return reply.code(400).send({ error: "invalid telescope reset time zone" });
         changes.push([key, value]);
       }
       db.transaction(() => {

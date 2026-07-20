@@ -87,6 +87,30 @@ function subtitle(s: any): string | undefined {
   return undefined;
 }
 
+export function tautulliRecentFields(s: any): Omit<RecentItem, "id" | "source"> {
+  const episodic = s.media_type === "episode" || s.media_type === "season";
+  const seriesTitle =
+    s.media_type === "season"
+      ? s.parent_title || s.grandparent_title
+      : s.grandparent_title || s.parent_title;
+  const art =
+    (s.media_type === "season"
+      ? s.parent_thumb || s.grandparent_thumb
+      : episodic
+        ? s.grandparent_thumb || s.parent_thumb
+        : s.thumb) || s.thumb;
+  const title = episodic ? seriesTitle || s.title : s.title;
+  const recentSubtitle = s.media_type === "season" ? s.title || undefined : subtitle(s);
+  return {
+    kind: recentKind(s.media_type),
+    title: title || "Untitled",
+    subtitle: recentSubtitle || (s.year ? String(s.year) : undefined),
+    artPath: art || undefined,
+    ratingKey: s.rating_key != null ? String(s.rating_key) : undefined,
+    addedAt: s.added_at ? Number(s.added_at) * 1000 : undefined,
+  };
+}
+
 export const tautulli: IntegrationAdapter = {
   type: "tautulli",
   label: "Tautulli",
@@ -132,17 +156,10 @@ export const tautulli: IntegrationAdapter = {
     const data = await tautulliCmd(cfg, "get_recently_added", { count: 40 });
     const rows: any[] = data?.recently_added ?? [];
     return rows.map((s): RecentItem => {
-      const episodic = s.media_type === "episode" || s.media_type === "season";
-      const art = (episodic ? s.grandparent_thumb || s.parent_thumb : s.thumb) || s.thumb;
-      const title = episodic ? s.grandparent_title || s.title : s.title;
       return {
         id: `tautulli-${cfg.id}-${s.rating_key}`,
         source: { id: cfg.id, type: cfg.type, name: cfg.name },
-        kind: recentKind(s.media_type),
-        title: title || "Untitled",
-        subtitle: subtitle(s) || (s.year ? String(s.year) : undefined),
-        artPath: art || undefined,
-        addedAt: s.added_at ? Number(s.added_at) * 1000 : undefined,
+        ...tautulliRecentFields(s),
       };
     });
   },

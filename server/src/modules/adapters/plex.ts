@@ -175,6 +175,19 @@ export async function resolvePlexItemUrl(
   return `${plexWebRoot(browserBaseUrl)}#!/server/${machineIdentifier}/details?key=${key}`;
 }
 
+/** Build an exact Plex Web deep link when the caller already has a rating key. */
+export async function resolvePlexRatingKeyUrl(
+  cfg: IntegrationConfig,
+  browserBaseUrl: string,
+  ratingKey: string
+): Promise<string | undefined> {
+  const identity = await fetchJson<any>(joinUrl(cfg.url, "/identity"), { headers: headers(cfg) });
+  const machineIdentifier = identity.MediaContainer?.machineIdentifier;
+  if (!machineIdentifier) return undefined;
+  const key = encodeURIComponent(`/library/metadata/${ratingKey}`);
+  return `${plexWebRoot(browserBaseUrl)}#!/server/${machineIdentifier}/details?key=${key}`;
+}
+
 function playbackState(raw: string | undefined): PlaybackState {
   return raw === "paused" ? "paused" : raw === "buffering" ? "buffering" : "playing";
 }
@@ -231,6 +244,30 @@ function recentKind(type: string | undefined): RecentItem["kind"] {
     default:
       return "unknown";
   }
+}
+
+export function plexRecentFields(item: any): Omit<RecentItem, "id" | "source"> {
+  const episodic = item.type === "episode" || item.type === "season";
+  const seriesTitle =
+    item.type === "season"
+      ? item.parentTitle || item.grandparentTitle
+      : item.grandparentTitle || item.parentTitle;
+  const art =
+    (item.type === "season"
+      ? item.parentThumb || item.grandparentThumb
+      : episodic
+        ? item.grandparentThumb || item.parentThumb
+        : item.thumb) || item.thumb;
+  const title = episodic ? seriesTitle || item.title : item.title;
+  const recentSubtitle = item.type === "season" ? item.title || undefined : sessionSubtitle(item);
+  return {
+    kind: recentKind(item.type),
+    title: title || "Untitled",
+    subtitle: recentSubtitle || (item.year ? String(item.year) : undefined),
+    artPath: art ? safeArtPath(art) : undefined,
+    ratingKey: item.ratingKey != null ? String(item.ratingKey) : undefined,
+    addedAt: item.addedAt ? Number(item.addedAt) * 1000 : undefined,
+  };
 }
 
 /** Only allow proxying Plex's own art paths — never an arbitrary URL. */
@@ -293,18 +330,10 @@ export const plex: IntegrationAdapter = {
     );
     const items: any[] = data.MediaContainer?.Metadata ?? [];
     return items.map((item): RecentItem => {
-      const episodic = item.type === "episode" || item.type === "season";
-      // for an episode/season the show poster (grandparentThumb) reads best on a wall
-      const art = (episodic ? item.grandparentThumb || item.parentThumb : item.thumb) || item.thumb;
-      const title = episodic ? item.grandparentTitle || item.title : item.title;
       return {
         id: `plex-${cfg.id}-${item.ratingKey}`,
         source: { id: cfg.id, type: cfg.type, name: cfg.name },
-        kind: recentKind(item.type),
-        title: title || "Untitled",
-        subtitle: sessionSubtitle(item) || (item.year ? String(item.year) : undefined),
-        artPath: art ? safeArtPath(art) : undefined,
-        addedAt: item.addedAt ? Number(item.addedAt) * 1000 : undefined,
+        ...plexRecentFields(item),
       };
     });
   },

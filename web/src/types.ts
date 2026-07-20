@@ -357,6 +357,7 @@ export interface RecentItem {
   title: string;
   subtitle?: string;
   artPath?: string;
+  ratingKey?: string;
   addedAt?: number;
 }
 export interface RecentResponse {
@@ -484,11 +485,26 @@ export interface ScopeStatus {
     mean?: number;
     imageType?: string;
   };
+  events?: ScopeEvent[];
+}
+export type ScopeEventKind =
+  "exposure" | "target" | "meridian" | "mount" | "guide" | "focus" | "filter";
+export interface ScopeEvent {
+  id: string;
+  kind: ScopeEventKind;
+  title: string;
+  detail?: string;
+  at: number;
 }
 export interface ScopeResponse {
   scopes: ScopeStatus[];
   errors: SourceError[];
   configured: number;
+  night?: {
+    mode: "sqm" | "time";
+    resetTime: string;
+    timeZone: string;
+  };
 }
 
 export type SiteState = "up" | "changed" | "error" | "down";

@@ -48,12 +48,25 @@ after(() => {
 });
 
 test("legacy pre-ledger schema upgrades transactionally without retaining orphan credentials", () => {
-  assert.equal(schemaVersion, 3);
+  assert.equal(schemaVersion, 4);
   assert.equal(db.prepare("SELECT group_id FROM users WHERE id = 1").get().group_id, 1);
   assert.equal(
     db.prepare("SELECT COUNT(*) AS count FROM monitor_history WHERE monitor_id = 1").get().count,
     1
   );
+  assert.ok(
+    db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'scope_events'").get()
+  );
+  db.prepare(
+    "INSERT INTO integrations (id, type, name, url) VALUES (9, 'nina', 'Test NINA', 'http://nina:1888')"
+  ).run();
+  db.prepare(
+    `INSERT INTO scope_events
+      (integration_id, night_key, event_key, kind, title, occurred_at)
+     VALUES (9, 'time:2026-07-19', 'exposure:1', 'exposure', 'Exposure completed', 1)`
+  ).run();
+  db.prepare("DELETE FROM integrations WHERE id = 9").run();
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM scope_events").get().count, 0);
   assert.equal(
     db
       .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'linked_accounts'")

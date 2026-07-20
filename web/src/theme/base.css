@@ -1969,10 +1969,25 @@ select {
 }
 .poster {
   margin: 0; /* <figure> ships a 40px UA margin — kill it or the tile collapses */
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 7px;
   min-width: 0;
+}
+.poster:disabled {
+  cursor: default;
+}
+.poster:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
 }
 .poster-art {
   position: relative;
@@ -3668,6 +3683,20 @@ select.input {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  container: scope-card / inline-size;
+}
+.scope-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(220px, 24%, 330px);
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+}
+.scope-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
 }
 .scope-name {
   font-weight: 600;
@@ -3739,30 +3768,35 @@ select.input {
   text-overflow: ellipsis;
 }
 
-/* hero media row: latest frame + guiding graph, side by side, wrapping narrow */
+/* Latest frame and guiding graph form a full-width vertical stack. */
 .scope-media {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
-}
-.scope-media > * {
-  flex: 1 1 220px;
+  width: 100%;
   min-width: 0;
 }
 
 .scope-shot {
   margin: 0;
   position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  /* Reserve only the height left after the headline, guide, stats and gaps.
+     The bounds keep very short/tall dashboard settings useful. */
+  height: clamp(140px, calc(var(--rows, 3) * var(--row-unit, 210px) - 330px), 640px);
+  min-height: 0;
   border-radius: var(--radius-md, 10px);
   overflow: hidden;
   border: 1px solid var(--card-border, var(--line));
   background: #000;
-  aspect-ratio: 3 / 2;
 }
 .scope-shot img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center;
   display: block;
 }
 .scope-shot figcaption {
@@ -3786,6 +3820,10 @@ select.input {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  width: 100%;
+  height: 132px;
+  min-width: 0;
+  box-sizing: border-box;
   border: 1px solid var(--card-border, var(--line));
   border-radius: var(--radius-md, 10px);
   background: color-mix(in srgb, var(--bg-deep) 22%, transparent);
@@ -3799,7 +3837,10 @@ select.input {
 }
 .scope-guide-legend {
   display: inline-flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 9px;
+  min-width: 0;
   font-size: 11px;
   font-family: var(--font-mono);
 }
@@ -3814,7 +3855,9 @@ select.input {
 }
 .scope-guide-svg {
   width: 100%;
-  height: 92px;
+  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
   display: block;
 }
 .scope-guide-zero {
@@ -3847,7 +3890,8 @@ select.input {
 
 .scope-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  /* auto-fit collapses unused tracks so every existing stat shares the full row. */
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
   gap: 10px;
 }
 .scope-tile {
@@ -3899,6 +3943,118 @@ select.input {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.scope-activity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--card-border, var(--line));
+  border-radius: var(--radius-md, 10px);
+  background: color-mix(in srgb, var(--bg-deep) 22%, transparent);
+}
+.scope-activity-head {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 11px 8px;
+  border-bottom: 1px solid var(--card-border, var(--line));
+  color: var(--text-faint);
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+}
+.scope-event-list {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 4px 0;
+}
+.scope-event {
+  --event-color: var(--text-faint);
+  display: grid;
+  grid-template-columns: 7px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+  padding: 9px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--card-border, var(--line)) 65%, transparent);
+}
+.scope-event:last-child {
+  border-bottom: 0;
+}
+.scope-event.event-exposure {
+  --event-color: var(--accent);
+}
+.scope-event.event-target,
+.scope-event.event-mount,
+.scope-event.event-meridian {
+  --event-color: var(--ok);
+}
+.scope-event.event-guide,
+.scope-event.event-focus,
+.scope-event.event-filter {
+  --event-color: var(--warn);
+}
+.scope-event-dot {
+  width: 7px;
+  height: 7px;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: var(--event-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--event-color) 18%, transparent);
+}
+.scope-event-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.scope-event-title {
+  color: var(--text);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.scope-event-detail {
+  color: var(--text-faint);
+  font-size: 10.5px;
+  font-family: var(--font-mono);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.scope-event time {
+  color: var(--text-faint);
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.scope-event-empty {
+  padding: 14px 12px;
+  color: var(--text-faint);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+@container scope-card (max-width: 620px) {
+  .scope-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .scope-activity {
+    height: 210px;
+  }
+}
+
+.settings-hint {
+  max-width: 680px;
+  color: var(--text-dim, var(--text-faint));
+  line-height: 1.5;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -4,6 +4,7 @@ import { listIntegrations, rowToConfig } from "./routes/integrations.js";
 import { fetchRaw } from "./modules/types.js";
 import { notify } from "./lib/notify.js";
 import { checkAllMonitors } from "./lib/siteChecker.js";
+import { formatFinishedDownload } from "./lib/downloadNotification.js";
 
 /**
  * Server-side watcher that turns state changes into notifications. Runs on an
@@ -206,14 +207,12 @@ async function checkDownloads(): Promise<void> {
     const srcId = Number(id.split("-")[1]);
     // only judge sources that answered this pass, and only near-complete items
     if (responded.has(srcId) && !current.has(id) && prev.progress >= DONE_PROGRESS) {
-      // a readable headline: "Severance · S02E07" for episodes, the plain title otherwise
-      const label = prev.episode ? `${prev.title} · ${prev.episode}` : prev.title;
-      const bodyLine = [prev.subtitle, prev.client].filter(Boolean).join(" · ");
+      const message = formatFinishedDownload(prev);
       await notify({
         kind: "success",
         category: "downloads",
-        title: `Download finished: ${label}`,
-        body: bodyLine || prev.client,
+        title: message.title,
+        body: message.body,
         fields: [
           { label: prev.episode ? "Series" : "Title", value: prev.title },
           ...(prev.episode ? [{ label: "Episode", value: prev.episode }] : []),

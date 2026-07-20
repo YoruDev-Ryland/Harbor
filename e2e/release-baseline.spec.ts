@@ -54,7 +54,7 @@ test("setup, keyboard dialogs, responsive settings, sign-out, and local login", 
 
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: "Harbormaster" })).toBeVisible();
-  await expect(page.getByText(/Harbor 0\.1\.0-e2e · schema 3/)).toBeVisible();
+  await expect(page.getByText(/Harbor 0\.1\.0-e2e · schema 4/)).toBeVisible();
   await expectAccessible(page, "administrator settings");
 
   await page.setViewportSize({ width: 375, height: 812 });

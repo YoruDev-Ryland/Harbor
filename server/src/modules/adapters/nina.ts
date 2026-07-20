@@ -1,4 +1,9 @@
-import type { IntegrationAdapter, IntegrationConfig, ScopeStatus } from "../types.js";
+import type {
+  IntegrationAdapter,
+  IntegrationConfig,
+  ScopeActivitySample,
+  ScopeStatus,
+} from "../types.js";
 import { fetchJson, fetchRaw, joinUrl } from "../types.js";
 
 /**
@@ -50,6 +55,87 @@ const seconds = (v: unknown): number | undefined => {
   const n = num(v);
   return n != null && n > 0 ? n : undefined;
 };
+
+function imageDate(image: any): number | undefined {
+  const raw = image.Date ?? image.DateTime ?? image.Timestamp ?? image.CreatedAt;
+  const at = typeof raw === "number" ? raw : Date.parse(String(raw ?? ""));
+  if (!Number.isFinite(at)) return undefined;
+  // Accept either epoch seconds or milliseconds from plugin versions that use numbers.
+  return at < 10_000_000_000 ? at * 1000 : at;
+}
+
+function imageTarget(image: any): string | undefined {
+  const raw =
+    image.TargetName ??
+    image.Target ??
+    image.ObjectName ??
+    image.SequenceTitle ??
+    image.SequenceName;
+  return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
+}
+
+function imagePierSide(image: any): string | undefined {
+  const raw = image.SideOfPier ?? image.PierSide;
+  return typeof raw === "string" && raw.trim() ? raw.trim() : undefined;
+}
+
+function exposureLabel(value: unknown): string | undefined {
+  const duration = seconds(value);
+  if (duration == null) return undefined;
+  return duration >= 60 && duration % 60 === 0 ? `${duration / 60}m` : `${duration}s`;
+}
+
+/** Convert NINA's recoverable image history into stable current-night events. */
+export function ninaActivitySamples(images: any[]): ScopeActivitySample[] {
+  const samples: ScopeActivitySample[] = [];
+  let priorTarget: string | undefined;
+  let priorPier: string | undefined;
+  for (const [index, image] of images.slice(-1500).entries()) {
+    const at = imageDate(image);
+    if (at == null) continue;
+    const target = imageTarget(image);
+    const pier = imagePierSide(image);
+    const identity = String(image.Id ?? image.Index ?? image.FileName ?? image.Filename ?? index);
+
+    if (target && target !== priorTarget) {
+      samples.push({
+        key: `target:${at}:${target}`,
+        kind: "target",
+        title: "Target changed",
+        detail: target,
+        at,
+      });
+    }
+    if (pier && priorPier && pier !== priorPier) {
+      samples.push({
+        key: `meridian:${at}:${priorPier}:${pier}`,
+        kind: "meridian",
+        title: "Meridian flip completed",
+        detail: `${priorPier} → ${pier}`,
+        at,
+      });
+    }
+
+    const detail = [
+      exposureLabel(image.ExposureTime),
+      image.Filter || undefined,
+      target,
+      image.ImageType || undefined,
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    samples.push({
+      key: `exposure:${at}:${identity}`,
+      kind: "exposure",
+      title: "Exposure completed",
+      detail: detail || undefined,
+      at,
+    });
+    if (target) priorTarget = target;
+    if (pier) priorPier = pier;
+  }
+  return samples;
+}
 
 export const nina: IntegrationAdapter = {
   type: "nina",
@@ -194,6 +280,7 @@ export const nina: IntegrationAdapter = {
         mean: num(last.Mean),
         imageType: last.ImageType || undefined,
       };
+      status.activitySamples = ninaActivitySamples(images);
     }
 
     status.anyConnected = Boolean(

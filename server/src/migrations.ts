@@ -340,6 +340,28 @@ const migrations: Migration[] = [
       ).run();
     },
   },
+  {
+    version: 4,
+    name: "scope-night-activity",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS scope_events (
+          id             INTEGER PRIMARY KEY AUTOINCREMENT,
+          integration_id INTEGER NOT NULL REFERENCES integrations(id) ON DELETE CASCADE,
+          night_key      TEXT NOT NULL,
+          event_key      TEXT NOT NULL,
+          kind           TEXT NOT NULL,
+          title          TEXT NOT NULL,
+          detail         TEXT NOT NULL DEFAULT '',
+          occurred_at    INTEGER NOT NULL,
+          created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+          UNIQUE(integration_id, night_key, event_key)
+        );
+        CREATE INDEX IF NOT EXISTS scope_events_night
+          ON scope_events(night_key, integration_id, occurred_at DESC);
+      `);
+    },
+  },
 ];
 
 export function runMigrations(db: Sqlite): number {

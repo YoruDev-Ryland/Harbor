@@ -375,6 +375,7 @@ test("route matrix denies hidden modules and configuration inventories", async (
     ["GET", "/api/widgets/nowplaying/art?source=1&path=x"],
     ["GET", "/api/widgets/system"],
     ["POST", "/api/widgets/plex/resolve", {}],
+    ["POST", "/api/widgets/plex/recent/resolve", {}],
     ["GET", "/api/widgets/indexers"],
     ["GET", "/api/widgets/containers"],
     ["GET", "/api/widgets/progress"],

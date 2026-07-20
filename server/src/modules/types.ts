@@ -134,6 +134,8 @@ export interface RecentItem {
   subtitle?: string;
   /** raw art path on the source; the browser loads it via the art proxy */
   artPath?: string;
+  /** Plex library metadata key, also exposed by Tautulli, for exact deep links */
+  ratingKey?: string;
   /** ms since epoch it was added, for recent-first sorting */
   addedAt?: number;
 }
@@ -301,6 +303,27 @@ export interface ScopeStatus {
     mean?: number;
     imageType?: string;
   };
+  /** current-night actions, newest first */
+  events?: ScopeEvent[];
+  /** Adapter-only capture samples; removed before the API response is sent. */
+  activitySamples?: ScopeActivitySample[];
+}
+
+export type ScopeEventKind =
+  "exposure" | "target" | "meridian" | "mount" | "guide" | "focus" | "filter";
+
+export interface ScopeEvent {
+  id: string;
+  kind: ScopeEventKind;
+  title: string;
+  detail?: string;
+  /** epoch milliseconds */
+  at: number;
+}
+
+export interface ScopeActivitySample extends Omit<ScopeEvent, "id"> {
+  /** stable source-side identity used to de-duplicate image-history polling */
+  key: string;
 }
 
 export type PlaybackState = "playing" | "paused" | "buffering";

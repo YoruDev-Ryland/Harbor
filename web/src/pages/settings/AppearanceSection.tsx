@@ -10,12 +10,28 @@ export default function AppearanceSection() {
 
   const { data: settings } = useQuery({
     queryKey: ["settings"],
-    queryFn: () => api.get<{ title: string; default_theme: string }>("/api/settings"),
+    queryFn: () =>
+      api.get<{
+        title: string;
+        default_theme: string;
+        scope_reset_time: string;
+        scope_reset_timezone: string;
+      }>("/api/settings"),
   });
 
   const [title, setTitle] = useState("");
+  const [scopeResetTime, setScopeResetTime] = useState("20:00");
+  const [scopeResetTimezone, setScopeResetTimezone] = useState(
+    Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+  );
   useEffect(() => {
-    if (settings) setTitle(settings.title);
+    if (settings) {
+      setTitle(settings.title);
+      setScopeResetTime(settings.scope_reset_time || "20:00");
+      setScopeResetTimezone(
+        settings.scope_reset_timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+      );
+    }
   }, [settings]);
 
   const saveTitle = useMutation({
@@ -33,6 +49,15 @@ export default function AppearanceSection() {
 
   const setDefaultTheme = useMutation({
     mutationFn: (theme: string) => api.patch("/api/settings", { default_theme: theme }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings"] }),
+  });
+
+  const saveScopeReset = useMutation({
+    mutationFn: () =>
+      api.patch("/api/settings", {
+        scope_reset_time: scopeResetTime,
+        scope_reset_timezone: scopeResetTimezone,
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["settings"] }),
   });
 
@@ -90,6 +115,39 @@ export default function AppearanceSection() {
           disabled={saveTitle.isPending}
         >
           Save
+        </button>
+      </div>
+
+      <div className="card">
+        <h3>Telescope night log</h3>
+        <p className="settings-hint">
+          Without an SQM integration, Harbor starts a fresh telescope activity log at this local
+          time. When SQM is configured, the first fresh SQM reading of the new night takes priority.
+        </p>
+        <div className="field" style={{ maxWidth: 360 }}>
+          <label>Night reset time</label>
+          <input
+            className="input"
+            type="time"
+            value={scopeResetTime}
+            onChange={(e) => setScopeResetTime(e.target.value)}
+          />
+        </div>
+        <div className="field" style={{ maxWidth: 360 }}>
+          <label>Time zone</label>
+          <input
+            className="input"
+            value={scopeResetTimezone}
+            onChange={(e) => setScopeResetTimezone(e.target.value)}
+            placeholder="America/Chicago"
+          />
+        </div>
+        <button
+          className="btn primary"
+          onClick={() => saveScopeReset.mutate()}
+          disabled={saveScopeReset.isPending}
+        >
+          Save telescope log
         </button>
       </div>
     </>

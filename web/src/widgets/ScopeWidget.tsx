@@ -8,6 +8,7 @@ import {
   Filter as FilterIcon,
   Focus,
   Image as ImageIcon,
+  ListTree,
   Telescope,
 } from "lucide-react";
 import { api } from "../api";
@@ -161,6 +162,40 @@ function Tile({
   );
 }
 
+function eventTime(at: number): string {
+  return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(at);
+}
+
+function ActivityLog({ events }: { events: NonNullable<ScopeStatus["events"]> }) {
+  return (
+    <aside className="scope-activity" aria-label="Tonight's telescope activity">
+      <div className="scope-activity-head">
+        <span className="scope-tile-label">
+          <ListTree size={12} />
+          <span>Tonight</span>
+        </span>
+        {events.length > 0 && <span>{events.length}</span>}
+      </div>
+      <div className="scope-event-list">
+        {events.length === 0 ? (
+          <div className="scope-event-empty">Actions will appear as the night progresses.</div>
+        ) : (
+          events.map((event) => (
+            <div className={`scope-event event-${event.kind}`} key={event.id}>
+              <span className="scope-event-dot" aria-hidden />
+              <span className="scope-event-copy">
+                <span className="scope-event-title">{event.title}</span>
+                {event.detail && <span className="scope-event-detail">{event.detail}</span>}
+              </span>
+              <time dateTime={new Date(event.at).toISOString()}>{eventTime(event.at)}</time>
+            </div>
+          ))
+        )}
+      </div>
+    </aside>
+  );
+}
+
 function ScopeCard({ s, showName }: { s: ScopeStatus; showName?: boolean }) {
   const act = activity(s);
   const flip = s.mount?.tracking ? hoursToHm(s.mount.meridianFlipHours) : null;
@@ -178,162 +213,171 @@ function ScopeCard({ s, showName }: { s: ScopeStatus; showName?: boolean }) {
     <div className="scope-card">
       {showName && s.source.name && <div className="scope-name">{s.source.name}</div>}
 
-      <div className={`scope-headline act-${act.cls}`}>
-        <span className="scope-act">
-          <span className={`scope-act-dot act-${act.cls}`} />
-          {act.label}
-        </span>
-        {detail && <span className="scope-act-detail">{detail}</span>}
+      <div className="scope-layout">
+        <div className="scope-main">
+          <div className={`scope-headline act-${act.cls}`}>
+            <span className="scope-act">
+              <span className={`scope-act-dot act-${act.cls}`} />
+              {act.label}
+            </span>
+            {detail && <span className="scope-act-detail">{detail}</span>}
+          </div>
+
+          {(s.lastImage?.index != null || (s.guider?.history && s.guider.history.length > 1)) && (
+            <div className="scope-media">
+              {s.lastImage?.index != null && (
+                <ScopeShot
+                  sourceId={s.source.id}
+                  index={s.lastImage.index}
+                  caption={[
+                    s.lastImage.filter,
+                    s.lastImage.exposureSeconds != null
+                      ? `${Math.round(s.lastImage.exposureSeconds)}s`
+                      : null,
+                    s.lastImage.hfr != null ? `${s.lastImage.hfr.toFixed(2)} HFR` : null,
+                    s.lastImage.stars != null ? `${s.lastImage.stars}★` : null,
+                  ]
+                    .filter(Boolean)
+                    .join("  ·  ")}
+                />
+              )}
+              {s.guider?.history && s.guider.history.length > 1 && (
+                <GuideGraph
+                  history={s.guider.history}
+                  rmsRa={s.guider.rmsRaArcsec}
+                  rmsDec={s.guider.rmsDecArcsec}
+                  rmsTotal={s.guider.rmsTotalArcsec}
+                />
+              )}
+            </div>
+          )}
+
+          {s.anyConnected && (
+            <div className="scope-grid">
+              {s.camera && (
+                <Tile
+                  icon={<Camera size={12} />}
+                  label="Camera"
+                  value={temp(s.camera.temperatureC)}
+                  sub={
+                    s.camera.coolerOn
+                      ? `→ ${s.camera.targetTempC != null ? `${Math.round(s.camera.targetTempC)}°` : "set"}${
+                          s.camera.coolerPowerPct != null
+                            ? ` · ${Math.round(s.camera.coolerPowerPct)}%`
+                            : ""
+                        }`
+                      : "cooler off"
+                  }
+                />
+              )}
+
+              {s.mount && (
+                <Tile
+                  icon={<Compass size={12} />}
+                  label="Mount"
+                  value={coords ?? (s.mount.atPark ? "Parked" : "—")}
+                  sub={
+                    s.mount.altitude != null
+                      ? `Alt ${Math.round(s.mount.altitude)}°${
+                          s.mount.azimuth != null ? ` · Az ${Math.round(s.mount.azimuth)}°` : ""
+                        }`
+                      : undefined
+                  }
+                  valueClass="mono-sm"
+                />
+              )}
+
+              {s.guider && !(s.guider.history && s.guider.history.length > 1) && (
+                <Tile
+                  icon={<Crosshair size={12} />}
+                  label="Guiding"
+                  value={
+                    s.guider.rmsTotalArcsec != null
+                      ? `${s.guider.rmsTotalArcsec.toFixed(2)}″`
+                      : (s.guider.state ?? "—")
+                  }
+                  valueClass={`rms-${rmsClass(s.guider.rmsTotalArcsec)}`}
+                  sub={
+                    s.guider.rmsRaArcsec != null && s.guider.rmsDecArcsec != null
+                      ? `RA ${s.guider.rmsRaArcsec.toFixed(2)} · Dec ${s.guider.rmsDecArcsec.toFixed(2)}`
+                      : s.guider.state
+                  }
+                />
+              )}
+
+              {s.filterWheel && (
+                <Tile
+                  icon={<FilterIcon size={12} />}
+                  label="Filter"
+                  value={s.filterWheel.filter ?? "—"}
+                  sub={s.filterWheel.moving ? "changing…" : undefined}
+                />
+              )}
+
+              {s.focuser && (
+                <Tile
+                  icon={<Focus size={12} />}
+                  label="Focuser"
+                  value={s.focuser.position != null ? s.focuser.position.toLocaleString() : "—"}
+                  sub={
+                    s.focuser.temperatureC != null
+                      ? `${temp(s.focuser.temperatureC)}${s.focuser.moving ? " · moving" : ""}`
+                      : s.focuser.moving
+                        ? "moving"
+                        : undefined
+                  }
+                  valueClass="mono-sm"
+                />
+              )}
+
+              {s.weather && (
+                <Tile
+                  icon={<Cloud size={12} />}
+                  label="Weather"
+                  value={temp(s.weather.temperatureC, 0)}
+                  sub={[
+                    s.weather.humidityPct != null
+                      ? `${Math.round(s.weather.humidityPct)}% RH`
+                      : null,
+                    s.weather.cloudCoverPct != null
+                      ? `${Math.round(s.weather.cloudCoverPct)}% cloud`
+                      : null,
+                    s.weather.windSpeedMs != null
+                      ? `${s.weather.windSpeedMs.toFixed(1)} m/s`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                />
+              )}
+
+              {s.lastImage && (s.lastImage.hfr != null || s.lastImage.stars != null) && (
+                <Tile
+                  icon={<ImageIcon size={12} />}
+                  label="Last frame"
+                  value={
+                    s.lastImage.hfr != null
+                      ? `${s.lastImage.hfr.toFixed(2)} HFR`
+                      : `${s.lastImage.stars} stars`
+                  }
+                  sub={[
+                    s.lastImage.stars != null && s.lastImage.hfr != null
+                      ? `${s.lastImage.stars} stars`
+                      : null,
+                    s.lastImage.filter,
+                    s.lastImage.exposureSeconds != null
+                      ? `${Math.round(s.lastImage.exposureSeconds)}s`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                />
+              )}
+            </div>
+          )}
+        </div>
+        <ActivityLog events={s.events ?? []} />
       </div>
-
-      {(s.lastImage?.index != null || (s.guider?.history && s.guider.history.length > 1)) && (
-        <div className="scope-media">
-          {s.lastImage?.index != null && (
-            <ScopeShot
-              sourceId={s.source.id}
-              index={s.lastImage.index}
-              caption={[
-                s.lastImage.filter,
-                s.lastImage.exposureSeconds != null
-                  ? `${Math.round(s.lastImage.exposureSeconds)}s`
-                  : null,
-                s.lastImage.hfr != null ? `${s.lastImage.hfr.toFixed(2)} HFR` : null,
-                s.lastImage.stars != null ? `${s.lastImage.stars}★` : null,
-              ]
-                .filter(Boolean)
-                .join("  ·  ")}
-            />
-          )}
-          {s.guider?.history && s.guider.history.length > 1 && (
-            <GuideGraph
-              history={s.guider.history}
-              rmsRa={s.guider.rmsRaArcsec}
-              rmsDec={s.guider.rmsDecArcsec}
-              rmsTotal={s.guider.rmsTotalArcsec}
-            />
-          )}
-        </div>
-      )}
-
-      {s.anyConnected && (
-        <div className="scope-grid">
-          {s.camera && (
-            <Tile
-              icon={<Camera size={12} />}
-              label="Camera"
-              value={temp(s.camera.temperatureC)}
-              sub={
-                s.camera.coolerOn
-                  ? `→ ${s.camera.targetTempC != null ? `${Math.round(s.camera.targetTempC)}°` : "set"}${
-                      s.camera.coolerPowerPct != null
-                        ? ` · ${Math.round(s.camera.coolerPowerPct)}%`
-                        : ""
-                    }`
-                  : "cooler off"
-              }
-            />
-          )}
-
-          {s.mount && (
-            <Tile
-              icon={<Compass size={12} />}
-              label="Mount"
-              value={coords ?? (s.mount.atPark ? "Parked" : "—")}
-              sub={
-                s.mount.altitude != null
-                  ? `Alt ${Math.round(s.mount.altitude)}°${
-                      s.mount.azimuth != null ? ` · Az ${Math.round(s.mount.azimuth)}°` : ""
-                    }`
-                  : undefined
-              }
-              valueClass="mono-sm"
-            />
-          )}
-
-          {s.guider && !(s.guider.history && s.guider.history.length > 1) && (
-            <Tile
-              icon={<Crosshair size={12} />}
-              label="Guiding"
-              value={
-                s.guider.rmsTotalArcsec != null
-                  ? `${s.guider.rmsTotalArcsec.toFixed(2)}″`
-                  : (s.guider.state ?? "—")
-              }
-              valueClass={`rms-${rmsClass(s.guider.rmsTotalArcsec)}`}
-              sub={
-                s.guider.rmsRaArcsec != null && s.guider.rmsDecArcsec != null
-                  ? `RA ${s.guider.rmsRaArcsec.toFixed(2)} · Dec ${s.guider.rmsDecArcsec.toFixed(2)}`
-                  : s.guider.state
-              }
-            />
-          )}
-
-          {s.filterWheel && (
-            <Tile
-              icon={<FilterIcon size={12} />}
-              label="Filter"
-              value={s.filterWheel.filter ?? "—"}
-              sub={s.filterWheel.moving ? "changing…" : undefined}
-            />
-          )}
-
-          {s.focuser && (
-            <Tile
-              icon={<Focus size={12} />}
-              label="Focuser"
-              value={s.focuser.position != null ? s.focuser.position.toLocaleString() : "—"}
-              sub={
-                s.focuser.temperatureC != null
-                  ? `${temp(s.focuser.temperatureC)}${s.focuser.moving ? " · moving" : ""}`
-                  : s.focuser.moving
-                    ? "moving"
-                    : undefined
-              }
-              valueClass="mono-sm"
-            />
-          )}
-
-          {s.weather && (
-            <Tile
-              icon={<Cloud size={12} />}
-              label="Weather"
-              value={temp(s.weather.temperatureC, 0)}
-              sub={[
-                s.weather.humidityPct != null ? `${Math.round(s.weather.humidityPct)}% RH` : null,
-                s.weather.cloudCoverPct != null
-                  ? `${Math.round(s.weather.cloudCoverPct)}% cloud`
-                  : null,
-                s.weather.windSpeedMs != null ? `${s.weather.windSpeedMs.toFixed(1)} m/s` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            />
-          )}
-
-          {s.lastImage && (s.lastImage.hfr != null || s.lastImage.stars != null) && (
-            <Tile
-              icon={<ImageIcon size={12} />}
-              label="Last frame"
-              value={
-                s.lastImage.hfr != null
-                  ? `${s.lastImage.hfr.toFixed(2)} HFR`
-                  : `${s.lastImage.stars} stars`
-              }
-              sub={[
-                s.lastImage.stars != null && s.lastImage.hfr != null
-                  ? `${s.lastImage.stars} stars`
-                  : null,
-                s.lastImage.filter,
-                s.lastImage.exposureSeconds != null
-                  ? `${Math.round(s.lastImage.exposureSeconds)}s`
-                  : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            />
-          )}
-        </div>
-      )}
     </div>
   );
 }

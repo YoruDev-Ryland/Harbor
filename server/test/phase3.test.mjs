@@ -51,18 +51,18 @@ after(async () => {
 });
 
 test("fresh schema is versioned, ready, referentially valid, and private on disk", async () => {
-  assert.equal(schemaVersion, 3);
+  assert.equal(schemaVersion, 4);
   assert.deepEqual(
     db
       .prepare("SELECT version FROM schema_migrations ORDER BY version")
       .all()
       .map((row) => row.version),
-    [1, 2, 3]
+    [1, 2, 3, 4]
   );
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
   const ready = await inject("GET", "/api/health/ready", undefined, "");
   assert.equal(ready.statusCode, 200);
-  assert.equal(ready.json().schemaVersion, 3);
+  assert.equal(ready.json().schemaVersion, 4);
   assert.equal(
     db
       .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'linked_accounts'")
@@ -73,6 +73,25 @@ test("fresh schema is versioned, ready, referentially valid, and private on disk
   for (const name of ["harbor.db", "harbor.db-wal", "harbor.db-shm"])
     if (fs.existsSync(path.join(dataDir, name)))
       assert.equal(fs.statSync(path.join(dataDir, name)).mode & 0o777, 0o600);
+});
+
+test("telescope night reset settings validate time and IANA time zone", async () => {
+  assert.equal(
+    (await inject("PATCH", "/api/settings", { scope_reset_time: "25:99" })).statusCode,
+    400
+  );
+  assert.equal(
+    (await inject("PATCH", "/api/settings", { scope_reset_timezone: "not/a-zone" })).statusCode,
+    400
+  );
+  const saved = await inject("PATCH", "/api/settings", {
+    scope_reset_time: "20:00",
+    scope_reset_timezone: "America/Chicago",
+  });
+  assert.equal(saved.statusCode, 200, saved.body);
+  const settings = await inject("GET", "/api/settings");
+  assert.equal(settings.json().scope_reset_time, "20:00");
+  assert.equal(settings.json().scope_reset_timezone, "America/Chicago");
 });
 
 test("one-time invitations activate an account without storing the bearer token", async () => {

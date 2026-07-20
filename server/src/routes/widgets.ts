@@ -1,13 +1,13 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
-import { db } from "../db.js";
+import { db, getSetting, setSetting } from "../db.js";
 import { requirePerm } from "../auth/auth.js";
 import type { User } from "../auth/auth.js";
 import { getAdapter } from "../modules/registry.js";
-import { listIntegrationsForUser, rowToConfig } from "./integrations.js";
+import { listIntegrations, listIntegrationsForUser, rowToConfig } from "./integrations.js";
 import { canSee } from "./tabs.js";
 import { moduleAccessScope, requireWidget } from "../lib/moduleAccess.js";
 import { fetchRaw } from "../modules/types.js";
-import { resolvePlexItemUrl } from "../modules/adapters/plex.js";
+import { resolvePlexItemUrl, resolvePlexRatingKeyUrl } from "../modules/adapters/plex.js";
 import { hasOnlyKeys, isPlainRecord } from "../auth/validation.js";
 import { normalizeHttpUrl } from "../lib/urlValidation.js";
 import type {
@@ -20,10 +20,248 @@ import type {
   ProgressItem,
   RecentItem,
   ScopeStatus,
+  ScopeActivitySample,
+  ScopeEvent,
   SkyReading,
   StorageMount,
   QueueAction,
 } from "../modules/types.js";
+
+interface ScopeSnapshot {
+  slewing?: boolean;
+  sideOfPier?: string;
+  atPark?: boolean;
+  guideState?: string;
+  focuserMoving?: boolean;
+  filter?: string;
+  coordinates?: string;
+}
+
+const scopeSnapshots = new Map<number, ScopeSnapshot>();
+
+function zonedParts(at: number, timeZone: string): { date: string; minutes: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(at));
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "00";
+  return {
+    date: `${get("year")}-${get("month")}-${get("day")}`,
+    minutes: Number(get("hour")) * 60 + Number(get("minute")),
+  };
+}
+
+function previousDate(date: string): string {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day) - 86_400_000).toISOString().slice(0, 10);
+}
+
+function timeNightDate(at: number, resetTime: string, timeZone: string): string {
+  const local = zonedParts(at, timeZone);
+  const [hour, minute] = resetTime.split(":").map(Number);
+  return local.minutes >= hour * 60 + minute ? local.date : previousDate(local.date);
+}
+
+/** Astronomy nights cross midnight; a noon boundary keeps one evening/morning together. */
+function astronomyNightDate(at: number, timeZone: string): string {
+  const local = zonedParts(at, timeZone);
+  return local.minutes >= 12 * 60 ? local.date : previousDate(local.date);
+}
+
+async function scopeNightContext(): Promise<{
+  key: string;
+  mode: "sqm" | "time";
+  resetTime: string;
+  timeZone: string;
+  startedAt?: number;
+}> {
+  const resetTime = getSetting("scope_reset_time", "20:00");
+  const timeZone = getSetting(
+    "scope_reset_timezone",
+    process.env.TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+  );
+  const sqmRows = listIntegrations().filter((row) => getAdapter(row.type)?.fetchSkyReadings);
+  const storedKey = getSetting("scope_night_key", "");
+  let key: string;
+  let startedAt: number | undefined;
+
+  if (sqmRows.length) {
+    const now = Date.now();
+    const readings = await Promise.all(
+      sqmRows.map(async (row) => {
+        try {
+          return await getAdapter(row.type)!.fetchSkyReadings!(
+            rowToConfig(row),
+            (now - 15 * 60_000) / 1000,
+            now / 1000,
+            100
+          );
+        } catch {
+          return [];
+        }
+      })
+    );
+    const fresh = readings
+      .flat()
+      .filter((reading) => reading.mpsas > 0)
+      .map((reading) => ({ at: reading.ts > 1e12 ? reading.ts : reading.ts * 1000 }))
+      .filter((reading) => reading.at <= now + 5 * 60_000 && now - reading.at <= 15 * 60_000)
+      .sort((a, b) => b.at - a.at)[0];
+    if (fresh) {
+      key = `sqm:${astronomyNightDate(fresh.at, timeZone)}`;
+      if (storedKey === key) {
+        startedAt = Number(getSetting("scope_night_started_at", "0")) || fresh.at;
+      } else {
+        // On an upgrade/restart partway through a night, recover the start of
+        // the current continuous SQM run so NINA history can backfill it.
+        const history = (
+          await Promise.all(
+            sqmRows.map(async (row) => {
+              try {
+                return await getAdapter(row.type)!.fetchSkyReadings!(
+                  rowToConfig(row),
+                  (now - 24 * 60 * 60_000) / 1000,
+                  now / 1000,
+                  5000
+                );
+              } catch {
+                return [];
+              }
+            })
+          )
+        )
+          .flat()
+          .filter((reading) => reading.mpsas > 0)
+          .map((reading) => (reading.ts > 1e12 ? reading.ts : reading.ts * 1000))
+          .filter((at) => `sqm:${astronomyNightDate(at, timeZone)}` === key)
+          .sort((a, b) => a - b);
+        startedAt = fresh.at;
+        for (let i = history.length - 1; i >= 0; i--) {
+          const next = history[i + 1] ?? fresh.at;
+          if (next - history[i] > 30 * 60_000) break;
+          startedAt = history[i];
+        }
+      }
+    } else {
+      key = storedKey.startsWith("sqm:") ? storedKey : "sqm:waiting";
+      startedAt = Number(getSetting("scope_night_started_at", "0")) || undefined;
+    }
+  } else {
+    key = `time:${timeNightDate(Date.now(), resetTime, timeZone)}`;
+  }
+
+  if (storedKey !== key) {
+    db.transaction(() => {
+      db.prepare("DELETE FROM scope_events WHERE night_key != ?").run(key);
+      setSetting("scope_night_key", key);
+      if (startedAt != null) setSetting("scope_night_started_at", String(startedAt));
+      else db.prepare("DELETE FROM settings WHERE key = 'scope_night_started_at'").run();
+    })();
+    scopeSnapshots.clear();
+  }
+  return { key, mode: sqmRows.length ? "sqm" : "time", resetTime, timeZone, startedAt };
+}
+
+function snapshotOf(status: ScopeStatus): ScopeSnapshot {
+  return {
+    slewing: status.mount?.slewing,
+    sideOfPier: status.mount?.sideOfPier,
+    atPark: status.mount?.atPark,
+    guideState: status.guider?.state,
+    focuserMoving: status.focuser?.moving,
+    filter: status.filterWheel?.filter,
+    coordinates:
+      status.mount?.raString && status.mount?.decString
+        ? `${status.mount.raString}  ${status.mount.decString}`
+        : undefined,
+  };
+}
+
+function transitionSamples(status: ScopeStatus, now = Date.now()): ScopeActivitySample[] {
+  const current = snapshotOf(status);
+  const prior = scopeSnapshots.get(status.source.id);
+  scopeSnapshots.set(status.source.id, current);
+  if (!prior) return [];
+  const samples: ScopeActivitySample[] = [];
+  const add = (kind: ScopeActivitySample["kind"], title: string, detail?: string) =>
+    samples.push({ key: `state:${now}:${kind}:${title}`, kind, title, detail, at: now });
+  if (prior.slewing && current.slewing === false)
+    add("mount", "Slew completed", current.coordinates);
+  if (prior.sideOfPier && current.sideOfPier && prior.sideOfPier !== current.sideOfPier)
+    add("meridian", "Meridian flip completed", `${prior.sideOfPier} → ${current.sideOfPier}`);
+  if (!prior.atPark && current.atPark) add("mount", "Mount parked");
+  if (prior.atPark && current.atPark === false) add("mount", "Mount unparked");
+  if (prior.filter && current.filter && prior.filter !== current.filter)
+    add("filter", "Filter changed", `${prior.filter} → ${current.filter}`);
+  if (prior.focuserMoving && current.focuserMoving === false)
+    add("focus", "Focus completed", status.focuser?.position?.toLocaleString());
+  if (prior.guideState !== current.guideState && current.guideState) {
+    const guiding = /guid/i.test(current.guideState);
+    add("guide", guiding ? "Guiding started" : `Guider: ${current.guideState}`);
+  }
+  return samples;
+}
+
+function storeScopeEvents(
+  integrationId: number,
+  samples: ScopeActivitySample[],
+  night: Awaited<ReturnType<typeof scopeNightContext>>
+): void {
+  const insert = db.prepare(`
+    INSERT OR IGNORE INTO scope_events
+      (integration_id, night_key, event_key, kind, title, detail, occurred_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)`);
+  db.transaction(() => {
+    for (const sample of samples) {
+      const belongs =
+        night.mode === "time"
+          ? `time:${timeNightDate(sample.at, night.resetTime, night.timeZone)}` === night.key
+          : night.startedAt != null &&
+            sample.at >= night.startedAt &&
+            sample.at <= Date.now() + 300_000;
+      if (!belongs) continue;
+      insert.run(
+        integrationId,
+        night.key,
+        sample.key.slice(0, 512),
+        sample.kind,
+        sample.title.slice(0, 256),
+        (sample.detail ?? "").slice(0, 1024),
+        sample.at
+      );
+    }
+  })();
+}
+
+function scopeEvents(integrationId: number, nightKey: string): ScopeEvent[] {
+  return (
+    db
+      .prepare(
+        `SELECT id, kind, title, detail, occurred_at
+         FROM scope_events WHERE integration_id = ? AND night_key = ?
+         ORDER BY occurred_at DESC, id DESC LIMIT 500`
+      )
+      .all(integrationId, nightKey) as Array<{
+      id: number;
+      kind: ScopeEvent["kind"];
+      title: string;
+      detail: string;
+      occurred_at: number;
+    }>
+  ).map((row) => ({
+    id: String(row.id),
+    kind: row.kind,
+    title: row.title,
+    detail: row.detail || undefined,
+    at: row.occurred_at,
+  }));
+}
 
 /** tiny TTL cache so widget polling doesn't hammer the integrations */
 const cache = new Map<string, { at: number; data: unknown }>();
@@ -376,6 +614,42 @@ export function widgetRoutes(app: FastifyInstance): void {
     }
   );
 
+  app.post<{ Body: { source: { id: number; type: string }; ratingKey: string } }>(
+    "/api/widgets/plex/recent/resolve",
+    { preHandler: requireWidget("recent") },
+    async (req, reply) => {
+      const body = req.body;
+      if (
+        !hasOnlyKeys(body, ["source", "ratingKey"]) ||
+        !isPlainRecord(body.source) ||
+        !hasOnlyKeys(body.source, ["id", "type"]) ||
+        !Number.isSafeInteger(body.source.id) ||
+        typeof body.source.type !== "string" ||
+        typeof body.ratingKey !== "string" ||
+        !/^\d{1,20}$/.test(body.ratingKey)
+      )
+        return reply.code(400).send({ error: "invalid recent item" });
+
+      const available = listIntegrationsForUser(req.user!).filter((r) => r.type === "plex");
+      const row =
+        (body.source.type === "plex"
+          ? available.find((candidate) => candidate.id === body.source.id)
+          : undefined) ?? available[0];
+      if (!row) return reply.code(404).send({ error: "No enabled Plex integration" });
+      try {
+        const url = await resolvePlexRatingKeyUrl(
+          rowToConfig(row),
+          row.public_url || row.url,
+          body.ratingKey
+        );
+        if (!url) return reply.code(404).send({ error: "Plex server identity unavailable" });
+        return { url };
+      } catch (err: any) {
+        return reply.code(502).send({ error: publicError(req.user!, err, "Plex lookup failed") });
+      }
+    }
+  );
+
   // ── indexers (Prowlarr) ───────────────────────────────────────────
   app.get("/api/widgets/indexers", { preHandler: requireWidget("indexers") }, async (req) =>
     cached(`indexers:${moduleAccessScope(req.user!)}`, 30_000, async () => {
@@ -676,11 +950,18 @@ export function widgetRoutes(app: FastifyInstance): void {
   app.get("/api/widgets/scope", { preHandler: requireWidget("scope") }, async (req) =>
     cached(`scope:${moduleAccessScope(req.user!)}`, 5000, async () => {
       const rows = listIntegrationsForUser(req.user!).filter((r) => getAdapter(r.type)?.fetchScope);
+      const night = await scopeNightContext();
       const errors: SourceError[] = [];
       const results = await Promise.all(
         rows.map(async (row): Promise<ScopeStatus | null> => {
           try {
-            return await getAdapter(row.type)!.fetchScope!(rowToConfig(row));
+            const status = await getAdapter(row.type)!.fetchScope!(rowToConfig(row));
+            if (!status) return null;
+            const samples = [...(status.activitySamples ?? []), ...transitionSamples(status)];
+            delete status.activitySamples;
+            storeScopeEvents(row.id, samples, night);
+            status.events = scopeEvents(row.id, night.key);
+            return status;
           } catch (err: any) {
             errors.push({
               source: { id: row.id, type: row.type, name: row.name },
@@ -691,7 +972,16 @@ export function widgetRoutes(app: FastifyInstance): void {
         })
       );
       const scopes = results.filter((s): s is ScopeStatus => s !== null);
-      return { scopes, errors, configured: rows.length };
+      return {
+        scopes,
+        errors,
+        configured: rows.length,
+        night: {
+          mode: night.mode,
+          resetTime: night.resetTime,
+          timeZone: night.timeZone,
+        },
+      };
     })
   );
 
