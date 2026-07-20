@@ -305,9 +305,9 @@ select {
   gap: 10px;
   width: 100%;
   padding: 7px 10px;
-  border: 1px solid transparent;
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  background: none;
+  background: color-mix(in srgb, var(--sidebar-bg) 72%, var(--hover));
   color: var(--text-dim);
   font-size: 13px;
   overflow: hidden;
@@ -315,7 +315,10 @@ select {
   text-align: left;
   transition:
     background 120ms ease,
-    border-color 120ms ease;
+    border-color 120ms ease,
+    transform 120ms ease,
+    box-shadow 120ms ease;
+  box-shadow: 0 5px 14px -10px rgba(0, 0, 0, 0.75);
 }
 
 .user-chip:hover,
@@ -323,6 +326,8 @@ select {
   background: var(--hover);
   border-color: var(--line);
   color: var(--text);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.85);
 }
 
 .user-chip .avatar {
@@ -459,15 +464,51 @@ select {
   align-items: start;
   /* one height "row unit"; a widget's --rows multiplies this for its body/wall */
   --row-unit: 210px;
+  grid-auto-flow: row dense;
+  grid-auto-rows: var(--row-unit);
 }
 
 .widget-slot {
   grid-column: span var(--cols, 2);
+  grid-row: span var(--rows, 2);
   min-width: 0;
+  min-height: 0;
+  height: 100%;
 }
 
 .widget-slot > .widget-locked {
   position: relative;
+  height: 100%;
+  min-height: 0;
+}
+
+.widget-slot > .widget-locked > .widget,
+.widget-slot > .widget {
+  height: calc(100% - 12px);
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.widget-slot .widget-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+/* These widgets historically calculated their own height from --rows. The grid
+   now owns that dimension, so their visual wall simply consumes the card space. */
+.widget-slot .cal-wall,
+.widget-slot .sky-wall,
+.widget-slot .heat-body {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+.widget-slot.editing > .widget-locked {
+  height: calc(100% - 44px);
 }
 
 /* block interaction with the embedded widget while arranging the layout */
@@ -2651,6 +2692,34 @@ select.input {
   padding: 6px;
   background: var(--hover);
   animation: edit-pulse 1.8s ease-in-out infinite;
+  position: relative;
+}
+
+.widget-resize-handle {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  z-index: 12;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background:
+    linear-gradient(135deg, transparent 46%, var(--text-faint) 47% 53%, transparent 54%) 6px 6px /
+      12px 12px no-repeat,
+    linear-gradient(135deg, transparent 46%, var(--accent) 47% 53%, transparent 54%) 10px 10px /
+      10px 10px no-repeat;
+  cursor: nwse-resize;
+  opacity: 0.72;
+  touch-action: none;
+}
+
+.widget-resize-handle:hover,
+.widget-resize-handle:focus-visible {
+  opacity: 1;
+  background-color: var(--hover);
+  outline: 1px solid var(--line-strong);
 }
 
 @keyframes edit-pulse {
@@ -3793,8 +3862,14 @@ select.input {
   background: #000;
 }
 .scope-shot img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
   object-fit: contain;
   object-position: center;
   display: block;

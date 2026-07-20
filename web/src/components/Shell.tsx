@@ -4,12 +4,12 @@ import { useQuery } from "@tanstack/react-query";
 import {
   ChevronsLeft,
   ChevronsRight,
-  Cog,
   ExternalLink,
   Home,
   LayoutDashboard,
   LogOut,
   Palette,
+  Pencil,
   RotateCw,
   Settings as SettingsIcon,
   UserCog,
@@ -284,11 +284,6 @@ export default function Shell() {
 
         <div className="sidebar-footer">
           <NotificationBell />
-          <button className="nav-item" onClick={() => setAccountOpen(true)} title="Settings">
-            <Cog size={17} className="nav-icon" />
-            <span>Settings</span>
-          </button>
-
           <div className="user-menu-wrap" ref={menuRef}>
             {menuOpen && (
               <div className="user-menu" role="menu">
@@ -308,8 +303,21 @@ export default function Shell() {
                     setAccountOpen(true);
                   }}
                 >
-                  <UserCog size={16} /> Account
+                  <UserCog size={16} /> Settings
                 </button>
+
+                {showOverview && (
+                  <button
+                    className="user-menu-item"
+                    role="menuitem"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      navigate("/", { state: { editLayout: true } });
+                    }}
+                  >
+                    <Pencil size={16} /> Edit dashboard layout
+                  </button>
+                )}
 
                 {canManageAnything(me.user) && (
                   <NavLink
@@ -347,7 +355,7 @@ export default function Shell() {
           <Route
             path="/"
             element={
-              <div className="content">
+              <div className="content" tabIndex={0}>
                 {showOverview ? <Dashboard /> : <NoOverview hasTabs={tabs.length > 0} />}
               </div>
             }
@@ -355,7 +363,7 @@ export default function Shell() {
           <Route
             path="/settings/*"
             element={
-              <div className="content">
+              <div className="content" tabIndex={0}>
                 {canManageAnything(me.user) ? <Settings /> : <NoAccess />}
               </div>
             }

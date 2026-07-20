@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, GripVertical, Minus, MoveVertical, Pencil, Plus, RotateCcw, X } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Check, GripVertical, Minus, MoveVertical, Plus, RotateCcw, X } from "lucide-react";
 import { api } from "../api";
 import { useSession } from "../App";
 import { can } from "../lib/perms";
@@ -20,6 +21,8 @@ import {
 
 export default function Dashboard() {
   const { me, refresh } = useSession();
+  const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   // editing the shared default (and setting per-module visibility) is a permission;
   // personalising your own overview is open to anyone who can see it
@@ -38,6 +41,13 @@ export default function Dashboard() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<LayoutItem[]>(saved);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!(location.state as { editLayout?: boolean } | null)?.editLayout) return;
+    setEditing(true);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.pathname, location.state, navigate]);
 
   // keep the draft in sync when the saved layout changes and we're not editing
   useEffect(() => {
@@ -109,33 +119,59 @@ export default function Dashboard() {
       return next;
     });
 
+  const beginResize = (event: React.PointerEvent, index: number) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const item = draft[index];
+    const meta = widgetById.get(item.id);
+    const gridWidth = gridRef.current?.getBoundingClientRect().width ?? 0;
+    const styles = gridRef.current ? getComputedStyle(gridRef.current) : null;
+    const gap = Number.parseFloat(styles?.columnGap || "20") || 20;
+    const colWidth = (gridWidth - gap * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
+    const rowUnit = Number.parseFloat(styles?.getPropertyValue("--row-unit") || "210") || 210;
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startCols = item.cols;
+    const startRows = item.rows;
+
+    const move = (e: PointerEvent) => {
+      const cols = clampCols(startCols + Math.round((e.clientX - startX) / (colWidth + gap)));
+      const rows = meta?.resizableHeight
+        ? clampRows(startRows + Math.round((e.clientY - startY) / (rowUnit + gap)))
+        : startRows;
+      setDraft((current) =>
+        current.map((entry, i) => (i === index ? { ...entry, cols, rows } : entry))
+      );
+    };
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  };
+
   const missing = widgets.filter(
     (w) => !draft.some((item) => item.id === w.id) && widgetAllowed(w.id)
   );
 
   return (
     <>
-      {!editing && (
-        <div className="dashboard-toolbar">
-          <button className="btn ghost" onClick={() => setEditing(true)}>
-            <Pencil size={15} /> Edit layout
-          </button>
-          {me.hasCustomLayout && (
-            <button
-              className="btn ghost"
-              title="Discard your personal layout and follow the shared default"
-              onClick={() => followDefault.mutate()}
-              disabled={followDefault.isPending}
-            >
-              <RotateCcw size={15} /> Follow default
-            </button>
-          )}
-        </div>
-      )}
-
       {editing && (
         <div className="dashboard-toolbar">
           <div className="edit-actions">
+            {me.hasCustomLayout && (
+              <button
+                className="btn ghost"
+                title="Discard your personal layout and follow the shared default"
+                onClick={() => followDefault.mutate()}
+                disabled={followDefault.isPending}
+              >
+                <RotateCcw size={15} /> Follow default
+              </button>
+            )}
             <button
               className="btn ghost"
               title="Reset to the shared default"
@@ -171,13 +207,13 @@ export default function Dashboard() {
 
       {editing && (
         <div className="edit-banner">
-          Drag the handle to reorder. Use −/+ to set width, and the height stepper to make a widget
-          taller or shorter. <strong>Save my layout</strong> changes only your overview
+          Drag the top handle to reorder, use −/+ for exact sizing, or drag a widget’s lower-right
+          corner to resize it. <strong>Save my layout</strong> changes only your overview
           {canEditDefault ? "; Save as default sets what everyone starts from." : "."}
         </div>
       )}
 
-      <div className="widget-grid">
+      <div className="widget-grid" ref={gridRef}>
         {layout.map((item, index) => {
           const meta = widgetById.get(item.id);
           if (!meta) return null;
@@ -186,6 +222,7 @@ export default function Dashboard() {
           return (
             <div
               key={`${item.id}-${index}`}
+              data-widget-id={item.id}
               className={`widget-slot${editing ? " editing" : ""}${
                 dragIndex === index ? " dragging" : ""
               }`}
@@ -276,6 +313,16 @@ export default function Dashboard() {
               <div className={editing ? "widget-locked" : undefined}>
                 <Widget cols={item.cols} options={options} />
               </div>
+              {editing && (
+                <button
+                  type="button"
+                  className="widget-resize-handle"
+                  aria-label={`Resize ${meta.name}`}
+                  title="Drag to resize"
+                  draggable={false}
+                  onPointerDown={(event) => beginResize(event, index)}
+                />
+              )}
             </div>
           );
         })}

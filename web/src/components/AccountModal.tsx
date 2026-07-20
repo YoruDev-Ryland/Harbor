@@ -126,7 +126,7 @@ export default function AccountModal({ onClose }: { onClose: () => void }) {
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="account-head">
-          <h3 id="account-dialog-title">Account · {me.user!.username}</h3>
+          <h3 id="account-dialog-title">Settings · {me.user!.username}</h3>
           <button className="btn ghost sm" onClick={onClose} aria-label="Close account settings">
             <X size={16} />
           </button>
