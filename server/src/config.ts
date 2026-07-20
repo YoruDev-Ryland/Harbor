@@ -96,7 +96,7 @@ function loadOptionalSecretFile(name: string): string {
 }
 
 export const config = {
-  appVersion: (process.env.HARBOR_VERSION || "0.1.6").trim(),
+  appVersion: (process.env.HARBOR_VERSION || "0.1.7").trim(),
   port: boundedInteger("PORT", 9090, 1, 65_535),
   host: process.env.HOST || "0.0.0.0",
   dataDir,
