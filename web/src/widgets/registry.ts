@@ -42,6 +42,8 @@ export interface WidgetMeta {
   defaultRows: number;
   /** whether the widget's body scales with height (stat bars don't) */
   resizableHeight?: boolean;
+  /** use a compact grid track instead of a full persisted height unit */
+  compactHeight?: boolean;
   options?: WidgetOption[];
   /** bespoke settings rendered inside the edit-mode gear (admin/user gated internally) */
   settingsPanel?: ComponentType<{ isAdmin: boolean }>;
@@ -57,6 +59,7 @@ export const widgets: WidgetMeta[] = [
     minCols: 2,
     defaultRows: 1,
     resizableHeight: false,
+    compactHeight: true,
   },
   {
     id: "calendar",

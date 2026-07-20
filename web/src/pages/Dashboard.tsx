@@ -230,6 +230,7 @@ export default function Dashboard() {
                 {
                   ["--cols" as string]: item.cols,
                   ["--rows" as string]: item.rows,
+                  ["--grid-rows" as string]: meta.compactHeight ? 2 : item.rows * 4,
                   ["--i" as string]: index,
                 } as React.CSSProperties
               }

@@ -462,15 +462,18 @@ select {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 20px;
   align-items: start;
-  /* one height "row unit"; a widget's --rows multiplies this for its body/wall */
+  /* Persisted widget heights remain 210px units. Each unit is subdivided into
+     four grid tracks so compact widgets can use two tracks without changing
+     existing saved layouts: 4 × 37.5px + 3 × 20px gaps = 210px. */
   --row-unit: 210px;
+  --grid-row-unit: 37.5px;
   grid-auto-flow: row dense;
-  grid-auto-rows: var(--row-unit);
+  grid-auto-rows: var(--grid-row-unit);
 }
 
 .widget-slot {
   grid-column: span var(--cols, 2);
-  grid-row: span var(--rows, 2);
+  grid-row: span var(--grid-rows, 8);
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -485,7 +488,9 @@ select {
 .widget-slot > .widget-frame > .widget {
   height: calc(100% - 12px);
   min-height: 0;
-  overflow: hidden;
+  /* The plaque deliberately straddles the card border. Content-heavy widget
+     bodies own their scrolling/clip, while the card lets that plaque overhang. */
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }

@@ -65,6 +65,7 @@ test("setup, keyboard dialogs, responsive settings, sign-out, and local login", 
         .querySelector<HTMLElement>(":scope > .widget-frame > .widget")!
         .getBoundingClientRect();
     const statsCard = card("stats");
+    const statsSlot = box("stats");
     const tall = box("calendar");
     const upper = box("nowplaying");
     const lower = box("downloads");
@@ -82,6 +83,20 @@ test("setup, keyboard dialogs, responsive settings, sign-out, and local login", 
       calendarWallHeight:
         slotFor("calendar").querySelector<HTMLElement>(".cal-wall")?.getBoundingClientRect()
           .height ?? 0,
+      compactStats: statsSlot.height < upper.height * 0.55,
+      statsContentFits:
+        slotFor("stats").querySelector<HTMLElement>(".stats-strip")!.scrollHeight <=
+        slotFor("stats").querySelector<HTMLElement>(".stats-strip")!.clientHeight,
+      titlePlaqueOverhangs: (() => {
+        const tag = slotFor("calendar").querySelector<HTMLElement>(".panel-tag")!;
+        const tagBox = tag.getBoundingClientRect();
+        const cardBox = card("calendar");
+        return (
+          getComputedStyle(tag.closest<HTMLElement>(".widget")!).overflow === "visible" &&
+          tagBox.top < cardBox.top &&
+          tagBox.bottom > cardBox.top
+        );
+      })(),
     };
   });
   expect(packed.rightOfTall).toBe(true);
@@ -92,6 +107,9 @@ test("setup, keyboard dialogs, responsive settings, sign-out, and local login", 
   expect(packed.visibleRowGap).toBeGreaterThanOrEqual(18);
   expect(packed.visibleRowGap).toBeLessThanOrEqual(22);
   expect(packed.calendarWallHeight).toBeGreaterThan(250);
+  expect(packed.compactStats).toBe(true);
+  expect(packed.statsContentFits).toBe(true);
+  expect(packed.titlePlaqueOverhangs).toBe(true);
 
   const constrainedLongList = await page.evaluate(() => {
     const slot = document.querySelector<HTMLElement>('[data-widget-id="downloads"]')!;
