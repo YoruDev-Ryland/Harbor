@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "license": "MIT",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "The harbor for all of your servers and web apps.",
   "workspaces": [
     "server",
