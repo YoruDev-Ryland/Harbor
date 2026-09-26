@@ -110,7 +110,7 @@ export async function buildApp(options: BuildAppOptions = {}) {
       .header("X-Content-Type-Options", "nosniff")
       .header("Referrer-Policy", "no-referrer")
       .header("X-Frame-Options", "DENY")
-      .header("Cross-Origin-Opener-Policy", "same-origin")
+      .header("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
       .header("Cross-Origin-Resource-Policy", "same-origin")
       .header(
         "Permissions-Policy",
